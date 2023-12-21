@@ -35,14 +35,18 @@ with col1:
 
         # Gerätinformationen darstellen
         attribute, value = st.columns(2)
-        with attribute:
-            st.write("Gerätename")
-            st.divider()
-            st.write("blebelbele")
+        with attribute:           
+            st.write("""
+                    Attribute 1  
+                    Attribute 2
+                    """)
+
         with value:
-            st.write(selected_device.name)
-            st.divider()
-            st.write(42069)
+            st.write(F"""
+                    {69420}  
+                    {42069}  
+                    """)
+            
 
         # Neues Gerät hinzufügen
             
