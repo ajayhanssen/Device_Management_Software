@@ -29,20 +29,20 @@ with col1:
 
         currentdevice = st.selectbox('Gerät auswählen', options=selectbox_options_dev, key="sbdevice_example")
 
-        if currentdevice == "Gerät 1":
-            st.write("Gerät 1 ausgewählt")
-            st.button("Do not press:")
-
         for device in devices:
             if device.name == currentdevice:
-                selected_device = device
-                st.write(device.name)
-                
+                selected_device = device                
 
         # Gerätinformationen darstellen
-        table_data = {'Attribute': ['Name', 'Attribute1', 'Attribute2'],
-                        'Value': [selected_device.name, 1, 2]}
-        st.table(table_data)
+        attribute, value = st.columns(2)
+        with attribute:
+            st.write("Gerätename")
+            st.divider()
+            st.write("blebelbele")
+        with value:
+            st.write(selected_device.name)
+            st.divider()
+            st.write(42069)
 
         # Neues Gerät hinzufügen
             
