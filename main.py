@@ -13,6 +13,8 @@ device_db = TinyDB('device_db.json')
 devices = [Device(**entry.get('device', {})) for entry in device_db.all()]
 # Close the database connection
 device_db.close()
+
+st.set_page_config(layout="wide")
 st.write("# Gerätemanagement")
 
 col1, col2 = st.columns(2)
