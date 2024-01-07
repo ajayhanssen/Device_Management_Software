@@ -1,9 +1,12 @@
 import streamlit as st
+st.set_page_config(layout="wide", page_title="Gerätemanagement", page_icon=":video_game:")
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from classes import User, Reservation, MTN_Plan, Device
 
 # Placeholder classes
+"""
 class Device():
     def __init__(self, name) -> None:
         self.name = name
@@ -13,17 +16,22 @@ class User():
     def __init__(self, name, id) -> None:
         self.name = name
         self.id = id
+"""
 
-st.set_page_config(layout="wide")
+
+
 st.write("# Gerätemanagement")
 
-devices = [Device("Nintendo Switch"), Device("Among Us"), Device("Pro Controller (Luigi Edition)")]
-users = [User("Andreas", "mr.rioes@gmail.com"), User("Hannes", "kompl_kek@yahoo.at"), User("Samuel", "fortn_battlepass@outlook.com")]
+users = [User(name="Andreas", id="mr.rioes@gmail.com"), User(name="Hannes", id="kompl_kek@yahoo.at"), User(name="Samuel", id="fortn_battlepass@outlook.com")]
+users_dict = {user.name: user for user in users}
+devices = [Device(name="Nintendo Switch", res_usr=users_dict["Andreas"], id=12345), Device(name="Among Us", res_usr=users_dict["Hannes"]), Device(name="Pro Controller (Luigi Edition)")]
+
+
 
 col1, col2 = st.columns([0.6, 0.4])
 
 with col1:
-    tab1, tab2, tab3 = st.tabs(["Geräte", "Nutzer", "Wartung"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Geräte", "Nutzer", "Wartung", "Reservierungen"])
     with tab1:
         st.header("Geräteverwaltung", divider="red")
         st.write("Übersicht aller registrierten Geräte")
@@ -49,14 +57,31 @@ with col1:
 
             with value:
                 st.write(selected_device.name)
-                st.write("123456789")
-                st.write(F"{users[0].name} ({users[0].id})")
+                st.write(selected_device.id)
+                if selected_device.res_usr is None:
+                    st.write("Kein Verantwortlicher")
+                else:
+                    st.write(F"{selected_device.res_usr.name} ({selected_device.res_usr.id})")
                 st.write(datetime.now().strftime("%d.%m.%Y"))
+            
+            # Gerät bearbeiten
+            with st.expander("Gerät bearbeiten"):
+                new_name = st.text_input("Gerätename", key="edit_name_device", placeholder="Name eingeben", value=selected_device.name)
+                new_id = st.text_input("Gerätenummer", key="edit_id_device", placeholder="Nummer eingeben", value=selected_device.id)
+                new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users], key="selectbox_edit_device_user", index=None, placeholder="Verantwortlichen auswählen")
+                new_date = st.date_input("Anschaffungsdatum", key="edit_date_device")
+                if st.button("Speichern", key="edit_device"):
+                    st.success("Änderungen gespeichert")
         
+        # Neues Gerät hinzufügen
         with st.expander("Neues Gerät hinzufügen"):
-            new_name = st.text_input("Gerätename")
+            new_name = st.text_input("Gerätename", key="name_new_device")
+            new_id = st.text_input("Gerätenummer", key="id_new_device")
+            new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
+            new_date = st.date_input("Anschaffungsdatum", key="date_new_device")
+
             if st.button("Hinzufügen", key="add_device"):
-                if any(device.name == new_name for device in devices):
+                if any(str(device.id) == new_id for device in devices):
                     st.warning("Gerät bereits vorhanden!")
                 else:
                     st.success("Gerät hinzugefügt")
@@ -70,8 +95,7 @@ with col1:
                 cont = st.container(border=True)
                 with cont:
                     st.write(F"{user.name} \t ({user.id})")
-                    #st.markdown(F'<div style="text-align: right;">{user.id}</div>', unsafe_allow_html=True)
-                    #st.write(user.id)
+                    
             with col4:
                 st.button("Editieren", key=F"edit_user_{user.id}")
             with col5:
@@ -90,6 +114,9 @@ with col1:
 
     with tab3:
         st.header("Wartungsplanung", divider="red")
+    
+    with tab4:
+        st.header("Reservierungssystem", divider="red")
 
 with col2:
     st.header("Allgemeine Übersicht", divider="red")
@@ -106,4 +133,7 @@ with col2:
         st.write("who is hannes unterhuber?")
     with st.chat_message("assistant"):
         st.write("For more information, please see [here](https://www.youtube.com/watch?v=dQw4w9WgXcQ).")
+
+# This ocmmand can rerun the script (DB-Reload?)
+#st.rerun()
                     
