@@ -132,10 +132,18 @@ with col1:
         
         # Neue Reservierung hinzufügen
             with st.expander("Neue Reservierung hinzufügen"):
-                st.date_input("Startdatum", key="new_res_start_date")
-                st.date_input("Enddatum", key="new_res_end_date")
+                start_date = st.date_input("Startdatum", key="new_res_start_date")
+                start_time = st.time_input("Startzeit", key="new_res_start_time")
+                end_date = st.date_input("Enddatum", key="new_res_end_date")
+                end_time = st.time_input("Endzeit", key="new_res_end_time")
                 if st.button("Reservieren", key="add_reservation"):
-                    st.success("Reservierung hinzugefügt")
+                    if start_date > end_date:
+                        st.warning("Startdatum muss vor Enddatum liegen!")
+                    else:
+                        if start_time > end_time:
+                            st.warning("Startzeit muss vor Endzeit liegen!")
+                        else:
+                            st.success("Reservierung hinzugefügt")
                 #st.warning("gewählter Zeitraum nicht mehr verfügbar"")
             
 
