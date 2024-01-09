@@ -115,6 +115,41 @@ with col1:
 
     with tab3:
         st.header("Wartungsplanung", divider="red")
+        sel_dev = st.selectbox("Gerät auswählen", options=[device.name for device in devices], key="mtn_selectbox_device", index=None, placeholder="Gerät auswählen")
+        
+        #testdaten für wartungsplan
+        devices_dict["Nintendo Switch"].MTN=MTN_Plan(mtn_int=30, first_mtn=datetime(2021, 10, 1), mtn_cost=420.69, last_mtn=datetime(2021, 10, 1), creation_d=datetime(2021, 10, 1), end_of_life=datetime(2024, 10, 1))  
+        
+        if sel_dev != None: 
+            sel_dev = devices_dict[sel_dev]
+            if sel_dev.MTN is None:
+                st.write("Kein Wartungsplan vorhanden")
+                #mtn hinzufügen
+                st.expander("Neuen Wartungsplan hinzufügen")
+            else:
+                st.write("Wartungsplan vorhanden")
+                st.write("Erstellungsdatum:", sel_dev.MTN.creation_d.strftime("%d.%m.%Y"))
+                st.write("Erste Instandhaltung:", sel_dev.MTN.first_mtn.strftime("%d.%m.%Y"))
+                st.write("Letzte Instandhaltung:", sel_dev.MTN.last_mtn.strftime("%d.%m.%Y"))
+                st.write("Kosten der Instandhaltung:", sel_dev.MTN.mtn_cost)
+                st.write("Intervall der Instandhaltung:", sel_dev.MTN.mtn_int)
+                st.write("Ende der Lebensdauer:", sel_dev.MTN.end_of_life.strftime("%d.%m.%Y"))
+
+            with st.expander("Neuen Wartungsplan hinzufügen"):
+                new_start = st.date_input("Anschaffungsdatum", key="new_mtn_start")
+                new_end = st.date_input("Ende der Instandhaltung", key="new_mtn_end")
+                new_interval = st.number_input("Intervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
+                if st.button("Hinzufügen", key="add_mtn_plan"):
+                    if new_start > new_end:
+                        st.warning("Startdatum muss vor Enddatum liegen!")
+                    else:
+                        st.success("Wartungsplan hinzugefügt")
+                        new_mtn_plan = MTN_Plan(new_start, new_end, new_interval)
+                        sel_dev.mtn_plan = new_mtn_plan
+                        st.write(sel_dev.mtn_plan.mtn_start)
+                        st.write(sel_dev.mtn_plan.mtn_end)
+                        st.write(sel_dev.mtn_plan.mtn_interval)
+                        st.write(sel_dev.mtn_plan.mtn_last)
     
     with tab4:
         st.header("Reservierungssystem", divider="red")
@@ -161,7 +196,7 @@ with col2:
     with st.chat_message("user"):
         st.write("who is hannes unterhuber?")
     with st.chat_message("assistant"):
-        st.write("For more information, please see [here](https://www.youtube.com/watch?v=dQw4w9WgXcQ).")
+        st.write("For more information, please see [here](https://t.ly/IIYqF).")
 
 # This ocmmand can rerun the script (DB-Reload?)
 #st.rerun()

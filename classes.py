@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 
 class User():
     def __init__(self,
@@ -25,17 +25,23 @@ class Reservation():
 
 class MTN_Plan():
     def __init__(self,
-                 mtn_int:int,
-                 first_mtn:dt,
-                 next_mtn:dt,
-                 mtn_cost:float):
+                 mtn_int:int = None,
+                 first_mtn:dt= None,
+                 next_mtn:dt= None,
+                 mtn_cost:float= None,
+                 last_mtn:dt=None,
+                 creation_d:dt=None,
+                 end_of_life:dt=None,):
     
         #initializing the class
 
-        self.__mtn_int = mtn_int
+        self.mtn_int = mtn_int
         self.first_mtn = first_mtn
-        self.next_mtn = next_mtn
-        self.__mtn_cost = mtn_cost
+        self.mtn_cost = mtn_cost
+        self.last_mtn = last_mtn
+        self.creation_d = creation_d
+        self.end_of_life = end_of_life
+        self.next_mtn = last_mtn + timedelta(days=mtn_int) if last_mtn is not None else None
     
 
 class Device():
@@ -43,9 +49,6 @@ class Device():
                  res_usr:User=None,
                  id:int=None,
                  name:str=None,
-                 last_upd:dt=None,
-                 creation_d:dt=None,
-                 end_of_life:dt=None,
                  MTN:MTN_Plan=None):
         
         #initializing the class
@@ -55,9 +58,6 @@ class Device():
         self.res_usr = res_usr 
         self.id = id
         self.name = name
-        self.__last_upd = last_upd
-        self.__creation_d = creation_d
-        self.end_of_life = end_of_life
         self.MTN = MTN
 
     def add_reservation(self, Reservation:Reservation):
@@ -66,8 +66,16 @@ class Device():
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
 
-    def change_creation_d(self, new_creation_d:dt):
-        self.__creation_d = new_creation_d
+    def change_creation_d(self, new_creation_d: dt):
+        if self.MTN is not None:
+            self.MTN.creation_d = new_creation_d  # Corrected this line
+        else:
+            # Handle the case where there is no MTN_Plan assigned to the Device
+            pass
 
-    def change_last_upd(self, new_last_upd:dt):
-        self.__last_upd = new_last_upd
+    def change_last_upd(self, new_last_upd: dt):
+        if self.MTN is not None:
+            self.MTN.last_upd = new_last_upd  # Corrected this line
+        else:
+            # Handle the case where there is no MTN_Plan assigned to the Device
+            pass
