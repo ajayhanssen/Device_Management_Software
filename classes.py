@@ -15,17 +15,13 @@ class Reservation():
     def __init__(self,
                  res_usr:User,
                  res_start:dt,
-                 res_end:dt,
-                 res_id:int,
-                 res_device:int):
+                 res_end:dt):
         
         #initializing the class
 
         self.res_usr = res_usr
         self.res_start = res_start
         self.res_end = res_end
-        self.res_id = res_id
-        self.res_device = res_device
 
 class MTN_Plan():
     def __init__(self,

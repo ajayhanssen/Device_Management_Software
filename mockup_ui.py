@@ -25,7 +25,8 @@ st.write("# Gerätemanagement")
 users = [User(name="Andreas", id="mr.rioes@gmail.com"), User(name="Hannes", id="kompl_kek@yahoo.at"), User(name="Samuel", id="fortn_battlepass@outlook.com")]
 users_dict = {user.name: user for user in users}
 devices = [Device(name="Nintendo Switch", res_usr=users_dict["Andreas"], id=12345), Device(name="Among Us", res_usr=users_dict["Hannes"]), Device(name="Pro Controller (Luigi Edition)")]
-
+devices_dict = {device.name: device for device in devices}
+devices_dict["Nintendo Switch"].reservations = [Reservation(res_start=datetime(2021, 10, 1), res_end=datetime(2021, 10, 5), res_usr=users_dict["Andreas"]), Reservation(res_start=datetime(2021, 10, 10), res_end=datetime(2021, 10, 15), res_usr=users_dict["Hannes"])]
 
 
 col1, col2 = st.columns([0.6, 0.4])
@@ -103,8 +104,8 @@ with col1:
 
         #Neuen Nutzer hinzufügen
         with st.expander("Neuen Nutzer hinzufügen"):
-            new_name = st.text_input("Nutzername", key="new_name")
-            new_id = st.text_input("Nutzer-ID", key="new_id")
+            new_name = st.text_input("Nutzername", key="new_name", placeholder="Name eingeben")
+            new_id = st.text_input("Nutzer-ID", key="new_id", placeholder="ID eingeben")
             if st.button("Hinzufügen", key="add_user"):
                 if any(user.name == new_name for user in users):
                     st.warning("User bereits vorhanden!")
@@ -117,6 +118,26 @@ with col1:
     
     with tab4:
         st.header("Reservierungssystem", divider="red")
+
+        sel_dev = st.selectbox("Gerät auswählen", options=[device.name for device in devices], key="selectbox_device", index=None, placeholder="Gerät auswählen")
+        if sel_dev != None:
+            current_reservations=pd.DataFrame(columns=["Nutzer", "Start", "Ende"])
+            sel_dev = devices_dict[sel_dev]
+            if sel_dev.reservations != []:
+                for reservation in sel_dev.reservations:
+                    current_reservations.loc[len(current_reservations.index)] = [reservation.res_usr.name, reservation.res_start, reservation.res_end]
+            # Check if the device has reservations
+                
+            st.dataframe(current_reservations, use_container_width=True)
+        
+        # Neue Reservierung hinzufügen
+            with st.expander("Neue Reservierung hinzufügen"):
+                st.date_input("Startdatum", key="new_res_start_date")
+                st.date_input("Enddatum", key="new_res_end_date")
+                if st.button("Reservieren", key="add_reservation"):
+                    st.success("Reservierung hinzugefügt")
+                #st.warning("gewählter Zeitraum nicht mehr verfügbar"")
+            
 
 with col2:
     st.header("Allgemeine Übersicht", divider="red")
