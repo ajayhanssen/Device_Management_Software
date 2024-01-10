@@ -27,11 +27,9 @@ class MTN_Plan():
     def __init__(self,
                  mtn_int:int = None,
                  first_mtn:dt= None,
-                 next_mtn:dt= None,
                  mtn_cost:float= None,
                  last_mtn:dt=None,
-                 creation_d:dt=None,
-                 end_of_life:dt=None,):
+                 end_of_life:dt=None):
     
         #initializing the class
 
@@ -39,7 +37,6 @@ class MTN_Plan():
         self.first_mtn = first_mtn
         self.mtn_cost = mtn_cost
         self.last_mtn = last_mtn
-        self.creation_d = creation_d
         self.end_of_life = end_of_life
         self.next_mtn = last_mtn + timedelta(days=mtn_int) if last_mtn is not None else None
     
@@ -59,23 +56,22 @@ class Device():
         self.id = id
         self.name = name
         self.MTN = MTN
+        self.__last_update = dt.now()
+        self.__creation_date = dt.now()
 
     def add_reservation(self, Reservation:Reservation):
         self.reservations.append(Reservation)
+        self.reservations = sorted(self.reservations, key=lambda x: x.res_start)
     
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
 
-    def change_creation_d(self, new_creation_d: dt):
-        if self.MTN is not None:
-            self.MTN.creation_d = new_creation_d  # Corrected this line
-        else:
-            # Handle the case where there is no MTN_Plan assigned to the Device
-            pass
+    def edit_device(self, name:str=None, id:int=None, MTN:MTN_Plan=None, res_usr:User=None):
+        self.name = name if name is not None else self.name
+        self.id = id if id is not None else self.id
+        self.MTN = MTN if MTN is not None else self.MTN
+        self.res_usr = res_usr if res_usr is not None else self.res_usr
+        self.__last_update = dt.now()
 
-    def change_last_upd(self, new_last_upd: dt):
-        if self.MTN is not None:
-            self.MTN.last_upd = new_last_upd  # Corrected this line
-        else:
-            # Handle the case where there is no MTN_Plan assigned to the Device
-            pass
+    def get_creation_date(self):
+        return self.__creation_date
