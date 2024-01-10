@@ -1,9 +1,10 @@
 import streamlit as st
-st.set_page_config(layout="wide", page_title="Gerätemanagement", page_icon=":video_game:")
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from classes import User, Reservation, MTN_Plan, Device
+import json
+st.set_page_config(layout="wide", page_title="Gerätemanagement", page_icon=":video_game:")
 
 # Placeholder classes
 """
@@ -18,7 +19,7 @@ class User():
         self.id = id
 """
 
-
+ 
 
 st.write("# Gerätemanagement")
 
@@ -47,8 +48,10 @@ with col1:
                 selected_device = device                
 
         # Gerätinformationen darstellen
+        
         container = st.container(border=True)
         with container:
+            """
             attribute, value = st.columns(2)
             with attribute:           
                 st.write("Gerätename: ")
@@ -64,7 +67,12 @@ with col1:
                 else:
                     st.write(F"{selected_device.res_usr.name} ({selected_device.res_usr.id})")
                 st.write(datetime.now().strftime("%d.%m.%Y"))
-            
+            """
+            dev_attributes = pd.DataFrame(columns=["Gerätenummer", "Verantwortlicher", "Anschaffungsdatum"])
+            dev_attributes.loc[len(dev_attributes.index)] = [
+            selected_device.id, selected_device.res_usr.name if selected_device.res_usr is not None else "Kein Verantwortlicher", datetime.now().strftime("%d.%m.%Y")]
+            st.dataframe(dev_attributes, use_container_width=True, hide_index=True)
+
             # Gerät bearbeiten
             with st.expander("Gerät bearbeiten"):
                 new_name = st.text_input("Gerätename", key="edit_name_device", placeholder="Name eingeben", value=selected_device.name)
