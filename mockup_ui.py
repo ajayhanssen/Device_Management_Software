@@ -154,7 +154,7 @@ with col1:
                 mtn_df.loc[len(mtn_df.index)] = [sel_dev.MTN.first_mtn.strftime('%d.%m.%Y'), sel_dev.MTN.last_mtn.strftime('%d.%m.%Y'), sel_dev.MTN.next_mtn.strftime('%d.%m.%Y'),sel_dev.MTN.mtn_cost, sel_dev.MTN.mtn_int, sel_dev.MTN.end_of_life.strftime('%d.%m.%Y')]
                 st.dataframe(mtn_df, use_container_width=True, hide_index=True)
 
-                # Kosten Wartung
+                # Kosten Wartung ----------------------------funkt no nit ganz
                 costs_quarter = pd.DataFrame(columns=["Quartal 1", "Quartal 2", "Quartal 3", "Quartal 4"])
                 
                 current_maint_time = sel_dev.MTN.first_mtn
