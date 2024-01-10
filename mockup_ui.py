@@ -71,7 +71,8 @@ with col1:
             dev_attributes = pd.DataFrame(columns=["Gerätenummer", "Verantwortlicher", "Anschaffungsdatum"])
             dev_attributes.loc[len(dev_attributes.index)] = [
             selected_device.id, selected_device.res_usr.name if selected_device.res_usr is not None else "Kein Verantwortlicher", datetime.now().strftime("%d.%m.%Y")]
-            st.dataframe(dev_attributes, use_container_width=True, hide_index=True)
+            styled_dev_attr = dev_attributes.style.format({"Expense": lambda x : '{:.4f}'.format(x)})
+            st.dataframe(styled_dev_attr, use_container_width=True, hide_index=True)
 
             # Gerät bearbeiten
             with st.expander("Gerät bearbeiten"):
@@ -84,8 +85,8 @@ with col1:
         
         # Neues Gerät hinzufügen
         with st.expander("Neues Gerät hinzufügen"):
-            new_name = st.text_input("Gerätename", key="name_new_device")
-            new_id = st.text_input("Gerätenummer", key="id_new_device")
+            new_name = st.text_input("Gerätename", key="name_new_device", placeholder="Name eingeben")
+            new_id = st.text_input("Gerätenummer", key="id_new_device", placeholder="ID eingeben")
             new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
             new_date = st.date_input("Anschaffungsdatum", key="date_new_device")
 
@@ -131,33 +132,38 @@ with col1:
         if sel_dev != None: 
             sel_dev = devices_dict[sel_dev]
             if sel_dev.MTN is None:
-                st.write("Kein Wartungsplan vorhanden")
+                with st.container(border=True):
+                    st.write("Kein Wartungsplan vorhanden")
                 #mtn hinzufügen
                 st.expander("Neuen Wartungsplan hinzufügen")
+                with st.expander("Neuen Wartungsplan hinzufügen"):
+                    new_start = st.date_input("Anschaffungsdatum", key="new_mtn_start")
+                    new_end = st.date_input("Ende der Instandhaltung", key="new_mtn_end")
+                    new_interval = st.number_input("Intervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
+                    if st.button("Hinzufügen", key="add_mtn_plan"):
+                        if new_start > new_end:
+                            st.warning("Startdatum muss vor Enddatum liegen!")
+                        else:
+                            st.success("Wartungsplan hinzugefügt")
+                            new_mtn_plan = MTN_Plan(new_start, new_end, new_interval)
+                            sel_dev.mtn_plan = new_mtn_plan
+                            st.write(sel_dev.mtn_plan.mtn_start)
+                            st.write(sel_dev.mtn_plan.mtn_end)
+                            st.write(sel_dev.mtn_plan.mtn_interval)
+                            st.write(sel_dev.mtn_plan.mtn_last)
             else:
-                st.write("Wartungsplan vorhanden")
+                mtn_df = pd.DataFrame(columns=["Erstellungsdatum", "Erste Instandhaltung", "Letzte Instandhaltung", "Kosten der Instandhaltung", "Intervall der Instandhaltung", "Ende der Lebensdauer"])
+                mtn_df.loc[len(mtn_df.index)] = [sel_dev.MTN.creation_d, sel_dev.MTN.first_mtn, sel_dev.MTN.last_mtn, sel_dev.MTN.mtn_cost, sel_dev.MTN.mtn_int, sel_dev.MTN.end_of_life]
+                st.dataframe(mtn_df.transpose(), use_container_width=True)
+                """ st.write("Wartungsplan vorhanden")
                 st.write("Erstellungsdatum:", sel_dev.MTN.creation_d.strftime("%d.%m.%Y"))
                 st.write("Erste Instandhaltung:", sel_dev.MTN.first_mtn.strftime("%d.%m.%Y"))
                 st.write("Letzte Instandhaltung:", sel_dev.MTN.last_mtn.strftime("%d.%m.%Y"))
                 st.write("Kosten der Instandhaltung:", sel_dev.MTN.mtn_cost)
                 st.write("Intervall der Instandhaltung:", sel_dev.MTN.mtn_int)
-                st.write("Ende der Lebensdauer:", sel_dev.MTN.end_of_life.strftime("%d.%m.%Y"))
+                st.write("Ende der Lebensdauer:", sel_dev.MTN.end_of_life.strftime("%d.%m.%Y")) """
 
-            with st.expander("Neuen Wartungsplan hinzufügen"):
-                new_start = st.date_input("Anschaffungsdatum", key="new_mtn_start")
-                new_end = st.date_input("Ende der Instandhaltung", key="new_mtn_end")
-                new_interval = st.number_input("Intervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
-                if st.button("Hinzufügen", key="add_mtn_plan"):
-                    if new_start > new_end:
-                        st.warning("Startdatum muss vor Enddatum liegen!")
-                    else:
-                        st.success("Wartungsplan hinzugefügt")
-                        new_mtn_plan = MTN_Plan(new_start, new_end, new_interval)
-                        sel_dev.mtn_plan = new_mtn_plan
-                        st.write(sel_dev.mtn_plan.mtn_start)
-                        st.write(sel_dev.mtn_plan.mtn_end)
-                        st.write(sel_dev.mtn_plan.mtn_interval)
-                        st.write(sel_dev.mtn_plan.mtn_last)
+            
     
     with tab4:
         st.header("Reservierungssystem", divider="red")
@@ -183,11 +189,19 @@ with col1:
                     if start_date > end_date:
                         st.warning("Startdatum muss vor Enddatum liegen!")
                     else:
-                        if start_time > end_time:
+                        if start_time > end_time and start_date == end_date:
                             st.warning("Startzeit muss vor Endzeit liegen!")
                         else:
-                            st.success("Reservierung hinzugefügt")
-                #st.warning("gewählter Zeitraum nicht mehr verfügbar"")
+
+                            for reserv in sel_dev.reservations:
+                                if reserv.res_start <= datetime.combine(start_date, start_time) <= reserv.res_end or reserv.res_start <= datetime.combine(end_date, end_time) <= reserv.res_end:
+                                    st.warning("Gewählter Zeitraum nicht mehr verfügbar")
+                                    break
+                                else:
+                                    new_reservation = Reservation(res_start=datetime.combine(start_date, start_time), res_end=datetime.combine(end_date, end_time), res_usr=users_dict["Andreas"])
+                                    sel_dev.reservations.append(new_reservation)
+                                    st.success("Reservierung hinzugefügt")
+                                    break
             
 
 with col2:
