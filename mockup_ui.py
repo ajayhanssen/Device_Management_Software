@@ -135,9 +135,10 @@ with col1:
                 #mtn hinzufügen
                 st.expander("Neuen Wartungsplan hinzufügen")
                 with st.expander("Neuen Wartungsplan hinzufügen"):
-                    new_start = st.date_input("Erste Wartung", key="new_mtn_start")
-                    new_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end")
+                    new_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD/MM/YYYY")
+                    new_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD/MM/YYYY")
                     new_interval = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
+                    new_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", min_value=0.0)
                     if st.button("Hinzufügen", key="add_mtn_plan"):
                         if new_start > new_end:
                             st.warning("Startdatum muss vor Enddatum liegen!")
@@ -181,14 +182,14 @@ with col1:
 
                 
                 with st.expander("Wartungsplan bearbeiten"):
-                    new_start = st.date_input("Erste Wartung", key="new_mtn_start")
-                    new_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end")
+                    new_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD/MM/YYYY")
+                    new_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD/MM/YYYY")
 
                     next_mtn_string = sel_dev.MTN.next_mtn.strftime("%d.%m.%Y")
-                    new_next = st.date_input(F"Nächsten Wartungstermin ändern (geplant: {next_mtn_string})", key="new_mtn_next")
+                    new_next = st.date_input(F"Nächsten Wartungstermin ändern (geplant: {next_mtn_string})", key="new_mtn_next", format="DD/MM/YYYY")
 
                     new_interval = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
-                    new_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", value=sel_dev.MTN.mtn_cost)
+                    new_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", value=sel_dev.MTN.mtn_cost, min_value=0.0)
                     if st.button("Speichern", key="save_mtn_plan"):
                         if new_start > new_end:
                             st.warning("Startdatum muss vor Enddatum liegen!")
@@ -229,10 +230,10 @@ with col1:
             with st.expander("Neue Reservierung hinzufügen"):
                 start, end = st.columns(2)
                 with start:
-                    start_date = st.date_input("Startdatum", key="new_res_start_date")
+                    start_date = st.date_input("Startdatum", key="new_res_start_date", format="DD/MM/YYYY")
                     start_time = st.time_input("Startzeit", key="new_res_start_time")
                 with end:
-                    end_date = st.date_input("Enddatum", key="new_res_end_date")
+                    end_date = st.date_input("Enddatum", key="new_res_end_date", format="DD/MM/YYYY")
                     end_time = st.time_input("Endzeit", key="new_res_end_time")
                 if st.button("Reservieren", key="add_reservation"):
                     if start_date > end_date:
