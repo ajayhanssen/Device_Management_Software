@@ -157,8 +157,12 @@ with col1:
                 # Kosten Wartung ----------------------------funkt no nit ganz
                 costs_quarter = pd.DataFrame(columns=["Quartal 1", "Quartal 2", "Quartal 3", "Quartal 4"])
                 
+
                 current_maint_time = sel_dev.MTN.first_mtn
-                end_of_year = datetime(current_maint_time.year, 12, 31)
+                while current_maint_time.year < datetime.now().year:
+                    current_maint_time = current_maint_time + timedelta(days=sel_dev.MTN.mtn_int)
+                
+                end_of_year = datetime(datetime.now().year, 12, 31)
                 costs_quarter_values = [0,0,0,0]
                 while current_maint_time < end_of_year:
                     current_maint_time = current_maint_time + timedelta(days=sel_dev.MTN.mtn_int)
@@ -223,10 +227,13 @@ with col1:
 
         # Neue Reservierung hinzufügen
             with st.expander("Neue Reservierung hinzufügen"):
-                start_date = st.date_input("Startdatum", key="new_res_start_date")
-                start_time = st.time_input("Startzeit", key="new_res_start_time")
-                end_date = st.date_input("Enddatum", key="new_res_end_date")
-                end_time = st.time_input("Endzeit", key="new_res_end_time")
+                start, end = st.columns(2)
+                with start:
+                    start_date = st.date_input("Startdatum", key="new_res_start_date")
+                    start_time = st.time_input("Startzeit", key="new_res_start_time")
+                with end:
+                    end_date = st.date_input("Enddatum", key="new_res_end_date")
+                    end_time = st.time_input("Endzeit", key="new_res_end_time")
                 if st.button("Reservieren", key="add_reservation"):
                     if start_date > end_date:
                         st.warning("Startdatum muss vor Enddatum liegen!")
