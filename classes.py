@@ -45,25 +45,57 @@ class User():
         
 
 class Reservation():
+    db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('res')
+
     def __init__(self,
                  res_usr:User,
                  res_start:dt,
-                 res_end:dt):
+                 res_end:dt,
+                 device_id:int):
         
         #initializing the class
-
+        device_id = device_id
         self.res_usr = res_usr
         self.res_start = res_start
         self.res_end = res_end
 
+    def store_data(self):
+        print("Storing data...")
+        # Check if the device already exists in the database
+        UserQuery = Query()
+        result = self.db_connector.search(UserQuery.device_id == self.device_id)
+        if result:
+            # Update the existing record with the current instance's data
+            result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
+            print("Reservations updated.")
+        else:
+            # If the device doesn't exist, insert a new record
+            self.db_connector.insert(self.__dict__)
+            print("Reservations inserted.")
+
+    @classmethod
+    def load_data_by_device_name(cls, device_id):
+        # Load data from the database and create an instance of the Device class
+        DeviceQuery = Query()
+        result = cls.db_connector.search(DeviceQuery.device_id == device_id)
+
+        if result:
+            data = result[0]
+            return cls(data['device_id'], data['res_usr'], data['res_start'], data['res_end'])
+        else:
+            return None
+
 class MTN_Plan():
+    db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('mtn')
+
     def __init__(self,
                  mtn_int:int = None,
                  first_mtn:dt= None,
                  mtn_cost:float= None,
                  last_mtn:dt=None,
                  end_of_life:dt=None,
-                 device_id:int=None):
+                 device_id:int=None,
+                 next_mtn:dt=None):
     
         #initializing the class
         
@@ -75,7 +107,31 @@ class MTN_Plan():
         self.end_of_life = end_of_life
         self.next_mtn = last_mtn + timedelta(days=mtn_int) if last_mtn is not None else None
     
-    
+    def store_data(self):
+        print("Storing data...")
+        # Check if the mtn already exists in the database
+        UserQuery = Query()
+        result = self.db_connector.search(UserQuery.device_id == self.device_id)
+        if result:
+            # Update the existing record with the current instance's data
+            result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
+            print("MTN-Plan updated.")
+        else:
+            # If the device doesn't exist, insert a new record
+            self.db_connector.insert(self.__dict__)
+            print("MTN-Plan inserted.")
+
+    @classmethod
+    def load_data_by_device_name(cls, device_id):
+        # Load data from the database and create an instance of the Device class
+        DeviceQuery = Query()
+        result = cls.db_connector.search(DeviceQuery.device_id == device_id)
+
+        if result:
+            data = result[0]
+            return cls(data['device_id'], data['mtn_int'], data['first_mtn'], data['mtn_cost'], data['last_mtn'], data['end_of_life'], data['next_mtn'])
+        else:
+            return None
 
 class Device():
     db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('devices')
