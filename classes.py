@@ -1,5 +1,7 @@
 import pandas as pd
 from datetime import datetime as dt, timedelta
+from tinydb import TinyDB, Query
+import os
 
 class User():
     def __init__(self,
@@ -42,6 +44,7 @@ class MTN_Plan():
     
 
 class Device():
+    db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json')).table('devices')
     def __init__(self,
                  res_usr:User=None,
                  id:int=None,
