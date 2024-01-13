@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime as dt, timedelta
 from tinydb import TinyDB, Query
 from serializer import serializer
+import streamlit as st
 
 import os
 
@@ -16,12 +17,21 @@ class User():
         
         self.name = name
         self.id = id
-    
+
+    def edit_user(self, name:str=None, id:int=None, forbidden_ids:list=None):
+        if id not in [name for name in forbidden_ids if name != id] and id is not None:
+            self.name = name
+            self.id = id
+            self.store_data()
+            st.success("Änderungen gespeichert.")
+        else:
+            st.warning("Bitte eine eindeutige ID eingeben.")
+
     def store_data(self):
         print("Storing data...")
         # Check if the device already exists in the database
         UserQuery = Query()
-        result = self.db_connector.search(UserQuery.name == self.name)
+        result = self.db_connector.search(UserQuery.id == self.id)
         if result:
             # Update the existing record with the current instance's data
             result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
@@ -32,10 +42,10 @@ class User():
             print("Users inserted.")
 
     @classmethod
-    def load_data_by_device_name(cls, name):
+    def load_data_by_user_id(cls, id):
         # Load data from the database and create an instance of the Device class
-        DeviceQuery = Query()
-        result = cls.db_connector.search(DeviceQuery.name == name)
+        UserQuery = Query()
+        result = cls.db_connector.search(UserQuery.id == id)
 
         if result:
             data = result[0]
@@ -46,15 +56,18 @@ class User():
 
 class Reservation():
     db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('res')
+    
 
     def __init__(self,
+                 res_index:int,
                  res_usr:User,
                  res_start:dt,
                  res_end:dt,
                  device_id:int):
         
         #initializing the class
-        device_id = device_id
+        self.res_index = res_index
+        self.device_id = device_id
         self.res_usr = res_usr
         self.res_start = res_start
         self.res_end = res_end
@@ -62,8 +75,8 @@ class Reservation():
     def store_data(self):
         print("Storing data...")
         # Check if the device already exists in the database
-        UserQuery = Query()
-        result = self.db_connector.search(UserQuery.device_id == self.device_id)
+        ReservationQuery = Query()
+        result = self.db_connector.search(ReservationQuery.res_index == self.res_index)
         if result:
             # Update the existing record with the current instance's data
             result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
@@ -74,14 +87,14 @@ class Reservation():
             print("Reservations inserted.")
 
     @classmethod
-    def load_data_by_device_name(cls, device_id):
+    def load_data_by_res_index(cls, res_index):
         # Load data from the database and create an instance of the Device class
-        DeviceQuery = Query()
-        result = cls.db_connector.search(DeviceQuery.device_id == device_id)
+        ReservationQuery = Query()
+        result = cls.db_connector.search(ReservationQuery.res_index == res_index)
 
         if result:
             data = result[0]
-            return cls(data['device_id'], data['res_usr'], data['res_start'], data['res_end'])
+            return cls(data['res_index'], data['res_usr'], data['res_start'], data['res_end'], data['device_id'])
         else:
             return None
 
@@ -110,8 +123,8 @@ class MTN_Plan():
     def store_data(self):
         print("Storing data...")
         # Check if the mtn already exists in the database
-        UserQuery = Query()
-        result = self.db_connector.search(UserQuery.device_id == self.device_id)
+        MTNQuery = Query()
+        result = self.db_connector.search(MTNQuery.device_id == self.device_id)
         if result:
             # Update the existing record with the current instance's data
             result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
@@ -122,29 +135,27 @@ class MTN_Plan():
             print("MTN-Plan inserted.")
 
     @classmethod
-    def load_data_by_device_name(cls, device_id):
+    def load_data_by_device_id(cls, device_id):
         # Load data from the database and create an instance of the Device class
-        DeviceQuery = Query()
-        result = cls.db_connector.search(DeviceQuery.device_id == device_id)
+        MTNQuery = Query()
+        result = cls.db_connector.search(MTNQuery.device_id == device_id)
 
         if result:
             data = result[0]
-            return cls(data['device_id'], data['mtn_int'], data['first_mtn'], data['mtn_cost'], data['last_mtn'], data['end_of_life'], data['next_mtn'])
+            return cls(data['mtn_int'], data['first_mtn'], data['mtn_cost'], data['last_mtn'], data['end_of_life'], data['device_id'], data['next_mtn'])
         else:
             return None
 
 class Device():
     db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('devices')
-    def __init__(self, res_usr:User=None, id:int=None, name:str=None, MTN:MTN_Plan=None, last_update:dt=None, creation_date:dt=None, reservations:list=None):
+
+    def __init__(self, res_usr:str=None, id:int=None, name:str=None, last_update:dt=None, creation_date:dt=None):
         
         #initializing the class
         
-        self.reservations = []
-
         self.res_usr = res_usr 
         self.id = id
         self.name = name
-        self.MTN = MTN
         self.last_update = last_update
         self.creation_date = creation_date
 
@@ -155,21 +166,22 @@ class Device():
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
 
-    def edit_device(self, name:str=None, id:int=None, MTN:MTN_Plan=None, res_usr:User=None):
-        self.name = name if name is not None else self.name
-        self.id = id if id is not None else self.id
-        self.MTN = MTN if MTN is not None else self.MTN
-        self.res_usr = res_usr if res_usr is not None else self.res_usr
-        self.__last_update = dt.now()
+    def edit_device(self, name:str=None, id:int=None, res_usr:User=None):
+        self.name = name
+        self.id = id
+        self.res_usr = res_usr
+        self.last_update = dt.now()
+        self.store_data()
 
     def set_creation_date(self):
         self.creation_date = dt.now()
+        self.last_update = dt.now()
     
     def store_data(self):
         print("Storing data...")
         # Check if the device already exists in the database
         DeviceQuery = Query()
-        result = self.db_connector.search(DeviceQuery.name == self.name)
+        result = self.db_connector.search(DeviceQuery.id == self.id)
         if result:
             # Update the existing record with the current instance's data
             result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
@@ -178,15 +190,23 @@ class Device():
             # If the device doesn't exist, insert a new record
             self.db_connector.insert(self.__dict__)
             print("Data inserted.")
-    
+
+    def add_new_device(self, forbidden_ids:list):
+        if self.id not in forbidden_ids:
+            self.set_creation_date()
+            self.store_data()
+            st.success("Gerät wurde erfolgreich hinzugefügt.")
+        else:
+            st.warning("Bitte eine eindeutige ID eingeben.")
+
     @classmethod
-    def load_data_by_device_name(cls, name):
+    def load_data_by_device_id(cls, id):
         # Load data from the database and create an instance of the Device class
         DeviceQuery = Query()
-        result = cls.db_connector.search(DeviceQuery.name == name)
+        result = cls.db_connector.search(DeviceQuery.id == id)
 
         if result:
             data = result[0]
-            return cls(data['res_usr'], data['id'], data['name'], data['MTN'], data['reservations'], data['last_update'], data['creation_date'])
+            return cls(data['res_usr'], data['id'], data['name'], data['last_update'], data['creation_date'])
         else:
             return None

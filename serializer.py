@@ -4,6 +4,7 @@ from tinydb_serialization import Serializer, SerializationMiddleware
 
 from tinydb_serialization.serializers import DateTimeSerializer
 
+
 class DateSerializer(Serializer):
     # The class this serializer handles --> must be date instead of datetime.date
     OBJ_CLASS = date
@@ -13,6 +14,7 @@ class DateSerializer(Serializer):
 
     def decode(self, s):
         return datetime.fromisoformat(s).date()
+
 
 serializer = SerializationMiddleware(JSONStorage)
 serializer.register_serializer(DateTimeSerializer(), 'TinyDateTime')

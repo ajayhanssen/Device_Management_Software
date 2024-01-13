@@ -1,40 +1,50 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+from queries import find_devices, find_users, find_mtn, find_res
 from datetime import datetime, timedelta
 from classes import User, Reservation, MTN_Plan, Device
 
 st.set_page_config(layout="wide", page_title="Gerätemanagement", page_icon=":video_game:")
 
-# Placeholder classes
-"""
-class Device():
-    def __init__(self, name) -> None:
-        self.name = name
-        self.user = None
-
-class User():
-    def __init__(self, name, id) -> None:
-        self.name = name
-        self.id = id
-"""
-
- 
 
 st.write("# Gerätemanagement")
 
-users = [User(name="Andreas", id="mr.rioes@gmail.com"), User(name="Hannes", id="kompl_kek@yahoo.at"), User(name="Samuel", id="fortn_battlepass@outlook.com")]
-users_dict = {user.name: user for user in users}
-devices = [Device(name="Nintendo Switch", res_usr=users_dict["Andreas"], id=12345), Device(name="Among Us", res_usr=users_dict["Hannes"]), Device(name="Pro Controller (Luigi Edition)")]
-devices_dict = {device.name: device for device in devices}
+users_in_db = find_users()
+devices_in_db = find_devices()
+reservations_in_db = find_res()
+mtn_in_db = find_mtn()
+
+# users_dict = {}
+# for user_db in users_in_db:
+#     current_user = User.load_data_by_user_id(user_db)
+#     users_dict[current_user.id] = current_user
+#
+devices_dict = {}
+for device_db in devices_in_db:
+    current_device = Device.load_data_by_device_id(device_db)
+    devices_dict[current_device.name] = current_device
+device_id_list = [device.id for device in devices_dict.values()]
+
+users_dict = {}
+for user_db in users_in_db:
+    current_user = User.load_data_by_user_id(user_db)
+    users_dict[current_user.name] = current_user
+user_id_list = [user.id for user in users_dict.values()]
+
+print(devices_dict) #########----------------Noch entfernen
+
+#users = [User(name="Andreas", id="mr.rioes@gmail.com"), User(name="Hannes", id="kompl_kek@yahoo.at"), User(name="Samuel", id="fortn_battlepass@outlook.com")]
+#users_dict = {user.id: user for user in users}
+#devices = [Device(name="Nintendo Switch", res_usr=users_dict["Andreas"], id=12345), Device(name="Among Us", res_usr=users_dict["Hannes"]), Device(name="Pro Controller (Luigi Edition)")]
+#devices_dict = {device.id: device for device in devices}
 
 
 # Testdaten für Reservierungen
-devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 1, 17), res_end=datetime(2024, 1, 19), res_usr=users_dict["Andreas"]))
-devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 3, 21), res_end=datetime(2024, 3, 22), res_usr=users_dict["Hannes"]))
-devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 5, 25), res_end=datetime(2024, 5, 26), res_usr=users_dict["Samuel"]))
-
-devices_dict["Among Us"].add_reservation(Reservation(res_start=datetime(2024, 1, 21), res_end=datetime(2024, 1, 22), res_usr=users_dict["Andreas"]))
+# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 1, 17), res_end=datetime(2024, 1, 19), res_usr=users_dict["Andreas"]))
+# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 3, 21), res_end=datetime(2024, 3, 22), res_usr=users_dict["Hannes"]))
+# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 5, 25), res_end=datetime(2024, 5, 26), res_usr=users_dict["Samuel"]))
+#
+# devices_dict["Among Us"].add_reservation(Reservation(res_start=datetime(2024, 1, 21), res_end=datetime(2024, 1, 22), res_usr=users_dict["Andreas"]))
 
 col1, col2 = st.columns([0.6, 0.4])
 
@@ -43,22 +53,21 @@ with col1:
     with tab1:
         st.header("Geräteverwaltung", divider="red")
         st.write("Übersicht aller registrierten Geräte")
-        selectbox_options_dev = [device.name for device in devices]
 
-        a = st.empty()
-
-        currentdevice = a.selectbox('Gerät auswählen', options=selectbox_options_dev)
-
+        selectbox_options_dev = [device.name for device in devices_dict.values()]
+        currentdevice = st.selectbox('Gerät auswählen', options=selectbox_options_dev)
+        #print(F"Selected device: {currentdevice}")
         selected_device = devices_dict[currentdevice]            
+        #print(F"Current device: {selected_device}")
 
         # Gerätinformationen darstellen
-        
         container = st.container(border=True)
         with container:
             
-            dev_attributes = pd.DataFrame(columns=["Gerätenummer", "Verantwortlicher", "Anschaffungsdatum"])
-            dev_attributes.loc[len(dev_attributes.index)] = [selected_device.id, selected_device.res_usr.name if selected_device.res_usr is not None
-                                                             else "Kein Verantwortlicher", selected_device.get_creation_date().strftime("%d.%m.%Y")]
+            dev_attributes = pd.DataFrame(columns=["Gerätenummer", "Verantwortlicher", "Erstelldatum", "Zuletzt bearbeitet"])
+            selected_device_user = User.load_data_by_user_id(selected_device.res_usr)
+            dev_attributes.loc[len(dev_attributes.index)] = [selected_device.id, selected_device_user.name if selected_device.res_usr is not None
+                                                             else "Kein Verantwortlicher", selected_device.creation_date.strftime("%d.%m.%Y"), selected_device.last_update.strftime("%d.%m.%Y")]
             # Dass die Kommas alle drei Nullen im Dataframe verschwinden:
             styled_dev_attr = dev_attributes.style.format({"Expense": lambda x : '{:.4f}'.format(x)})
 
@@ -67,24 +76,29 @@ with col1:
             # Gerät bearbeiten
             with st.expander("Gerät bearbeiten"):
                 new_name = st.text_input("Gerätename", key="edit_name_device", placeholder="Name eingeben", value=selected_device.name)
-                new_id = st.text_input("Gerätenummer", key="edit_id_device", placeholder="Nummer eingeben", value=selected_device.id)
-                new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users], key="selectbox_edit_device_user", index=None, placeholder="Verantwortlichen auswählen")
-                #new_date = st.date_input("Anschaffungsdatum", key="edit_date_device")
-                if st.button("Speichern", key="edit_device"):
+                #new_id = st.text_input("Gerätenummer", key="edit_id_device", placeholder="Nummer eingeben", value=selected_device.id)
+                new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_edit_device_user", index=None, placeholder="Verantwortlichen auswählen")
+
+                for user in users_dict.values():
+                    if user.name == new_user:
+                        new_user = user.id
+
+                if st.button("Speichern", key="edit_device", on_click=selected_device.edit_device, args=(new_name, selected_device.id, new_user)):
                     st.success("Änderungen gespeichert")
+
         
         # Neues Gerät hinzufügen
         with st.expander("Neues Gerät hinzufügen"):
-            new_name = st.text_input("Gerätename", key="name_new_device", placeholder="Name eingeben")
-            new_id = st.text_input("Gerätenummer", key="id_new_device", placeholder="ID eingeben")
-            new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
-            #new_date = st.date_input("Anschaffungsdatum", key="date_new_device")
+            new_dev_name = st.text_input("Gerätename", key="name_new_device", placeholder="Name eingeben")
+            new_dev_id = st.number_input("Gerätenummer *", key="id_new_device", placeholder="ID eingeben", min_value=0)
+            new_dev_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
+            new_dev_user_id = None
+            if new_dev_user != None:
+                new_device_user_id = users_dict[new_dev_user].id
+            new_device = Device(name=new_dev_name, id=new_dev_id, res_usr=new_dev_user_id)
 
-            if st.button("Hinzufügen", key="add_device"):
-                if any(str(device.id) == new_id for device in devices):
-                    st.warning("Gerät bereits vorhanden!")
-                else:
-                    st.success("Gerät hinzugefügt")
+            #st.button("Hinzufügen", key="add_device", on_click=new_device.add_new_device, args=[device_id_list])
+
     
     with tab2:
         st.header("Nutzerverwaltung", divider="red")
@@ -97,8 +111,8 @@ with col1:
                 
                 save, delete = st.columns(2)
                 with save:
-                    if st.button("Speichern", key=F"save_user_{users_dict[key].id}"):
-                        st.success("Änderungen gespeichert")
+                    st.button("Speichern", key=F"save_user_{users_dict[key].id}", on_click=users_dict[key].edit_user, args=(new_name, new_id, user_id_list))
+
                 with delete:
                     if st.button("Löschen", key=F"delete_user_{users_dict[key].id}"):
                         #st.success("Nutzer gelöscht")
@@ -108,9 +122,11 @@ with col1:
 
         #Neuen Nutzer hinzufügen
         with st.expander("Neuen Nutzer hinzufügen"):
-            new_name = st.text_input("Nutzername", key="new_name", placeholder="Name eingeben")
-            new_id = st.text_input("Nutzer-ID", key="new_id", placeholder="ID eingeben")
-            if st.button("Hinzufügen", key="add_user"):
+            new_user_name = st.text_input("Nutzername", key="new_name", placeholder="Name eingeben")
+            new_user_id = st.text_input("Nutzer-ID", key="new_id", placeholder="ID eingeben")
+            new_user = User(name=new_user_name, id=new_user_id)
+            #############################################################
+            if st.button("Hinzufügen", key="add_user", ):
                 if any(user.name == new_name for user in users):
                     st.warning("User bereits vorhanden!")
                 else:
@@ -259,12 +275,20 @@ with col2:
     st.write("Anstehende Reservierungen in nächsten 2 Wochen:")
 
     next_reservations = pd.DataFrame(columns=["Gerät", "Nutzer", "Start", "Ende"])
-    for device in devices:
-        if device.reservations != []:
-            for reservation in device.reservations:
-                if datetime.now() <= reservation.res_start <= datetime.now() + timedelta(days=14):
-                    next_reservations.loc[len(next_reservations.index)] = [device.name, reservation.res_usr.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
-    
+
+    if reservations_in_db is not []:
+        for reservation_db in reservations_in_db:
+            current_reservation = Reservation.load_data_by_res_index(reservation_db)
+            current_reservation_user = User.load_data_by_user_id(reservation_db)
+            current_reservation_device = Device.load_data_by_device_id(reservation_db)
+            if datetime.now() <= current_reservation.res_start <= datetime.now() + timedelta(days=14):
+                next_reservations.loc[len(next_reservations.index)] = [current_reservation_device.id, current_reservation_user.name, current_reservation.res_start.strftime('%d.%m.%Y %H:%M'), current_reservation.res_end.strftime('%d.%m.%Y %H:%M')]
+    # for device in devices_dict.values():
+    #     if device.reservations != []:
+    #         for reservation in device.reservations:
+    #             if datetime.now() <= reservation.res_start <= datetime.now() + timedelta(days=14):
+    #                 next_reservations.loc[len(next_reservations.index)] = [device.name, reservation.res_usr.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
+    #
     st.dataframe(next_reservations, use_container_width=True, hide_index=True)
 
     st.write("Anstehende Wartungen in nächsten 2 Wochen:")

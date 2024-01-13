@@ -13,7 +13,7 @@ def find_devices() -> list:
     
     # The result is a list of dictionaries, we only want the device names
     if result:
-        result = [x["name"] for x in result]
+        result = [x["id"] for x in result]
     
     return result
 
@@ -27,7 +27,7 @@ def find_users() -> list:
     
     # The result is a list of dictionaries, we only want the device names
     if result:
-        result = [x["name"] for x in result]
+        result = [x["id"] for x in result]
     return result
 
 def find_mtn() -> list:
@@ -51,7 +51,7 @@ def find_res() -> list:
     
     # The result is a list of dictionaries, we only want the device names
     if result:
-        result = [x["device_id"] for x in result]
+        result = [x["res_index"] for x in result]
     return result
 
 
