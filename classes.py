@@ -26,6 +26,12 @@ class User():
             st.success("Änderungen gespeichert.")
         else:
             st.warning("Bitte eine eindeutige ID eingeben.")
+    def add_user(self, forbidden_ids:list):
+        if self.id not in forbidden_ids:
+            self.store_data()
+            st.success("Benutzer wurde erfolgreich hinzugefügt.")
+        else:
+            st.warning("Bitte eine eindeutige ID eingeben.")
 
     def store_data(self):
         print("Storing data...")
@@ -71,6 +77,14 @@ class Reservation():
         self.res_usr = res_usr
         self.res_start = res_start
         self.res_end = res_end
+
+    #def add_reservation(self, Reservation:Reservation):
+        #self.reservations.append(Reservation)
+        #self.reservations = sorted(self.reservations, key=lambda x: x.res_start)
+     #   pass
+    def add_reservation(self):
+        self.store_data()
+        st.success("Reservierung wurde erfolgreich hinzugefügt.")
 
     def store_data(self):
         print("Storing data...")
@@ -119,7 +133,33 @@ class MTN_Plan():
         self.last_mtn = last_mtn
         self.end_of_life = end_of_life
         self.next_mtn = last_mtn + timedelta(days=mtn_int) if last_mtn is not None else None
-    
+
+    def add_new_mtn(self):
+        for key, value in self.__dict__.items():
+            if value is None:
+                st.warning(f"Bitte {key} eingeben.")
+            elif self.first_mtn > self.last_mtn:
+                st.warning("Bitte gültige Start- und Enddaten eingeben.")
+            else:
+                self.store_data()
+                st.success("Wartungsplan wurde erfolgreich hinzugefügt.")
+
+    def edit_mtn(self, first_mtn:dt=None, last_mtn:dt=None, end_of_life:dt=None, mtn_int:int=None, mtn_cost:float=None, mtn_next:dt=None):
+        if any(arg is None for arg in [first_mtn, last_mtn, end_of_life, mtn_int, mtn_cost, mtn_next]):
+            st.warning("Bitte alle Felder ausfüllen.")
+        elif first_mtn > last_mtn:
+            st.warning("Bitte gültige Start- und Enddaten eingeben.")
+        else:
+            self.first_mtn = dt.combine(first_mtn, dt.min.time())
+            self.last_mtn = dt.combine(last_mtn, dt.min.time())
+            self.end_of_life = dt.combine(end_of_life, dt.min.time())
+            self.mtn_int = mtn_int
+            self.mtn_cost = mtn_cost
+            self.next_mtn = dt.combine(mtn_next, dt.min.time())
+            self.store_data()
+            st.success("Änderungen gespeichert.")
+
+
     def store_data(self):
         print("Storing data...")
         # Check if the mtn already exists in the database
@@ -158,10 +198,6 @@ class Device():
         self.name = name
         self.last_update = last_update
         self.creation_date = creation_date
-
-    def add_reservation(self, Reservation:Reservation):
-        self.reservations.append(Reservation)
-        self.reservations = sorted(self.reservations, key=lambda x: x.res_start)
     
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
