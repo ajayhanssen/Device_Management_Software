@@ -100,7 +100,7 @@ with (col1):
                 new_device_user_id = users_dict[new_dev_user].id
             new_device = Device(name=new_dev_name, id=new_dev_id, res_usr=new_dev_user_id)
 
-            #st.button("Hinzufügen", key="add_device", on_click=new_device.add_new_device, args=[device_id_list])
+            st.button("Hinzufügen", key="add_device", on_click=new_device.add_new_device, args=[device_id_list])
 
     
     with tab2:
