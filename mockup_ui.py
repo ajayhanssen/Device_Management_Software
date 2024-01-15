@@ -251,24 +251,25 @@ with (col1):
 
                 if res_start_date > res_end_date:
                     st.warning("Startdatum muss vor Enddatum liegen!")
-                else:
-                    if res_start_time > res_end_time and res_start_date == res_end_date:
+                elif res_start_time > res_end_time and res_start_date == res_end_date:
                         st.warning("Startzeit muss vor Endzeit liegen!")
-                    else:
+                else:
+                    available = True
+                    for reserv in sel_dev_reservations:
+                        if reserv.res_start <= datetime.combine(res_start_date, res_start_time) <= reserv.res_end or reserv.res_start <= datetime.combine(res_end_date, res_end_time) <= reserv.res_end:
+                            available = False
+                            st.warning("Gewählter Zeitraum nicht mehr verfügbar")
+                            ############################################### fail walachmed sikerim
+                        elif new_res_user != None:
+                            new_reservation = Reservation(res_index=len(sel_dev_reservations),
+                                                          res_start=datetime.combine(res_start_date, res_start_time),
+                                                          res_end=datetime.combine(res_end_date, res_end_time),
+                                                          res_usr=users_dict[new_res_user].id, device_id=sel_dev.id)
 
-                        for reserv in sel_dev_reservations:
-                            if reserv.res_start <= datetime.combine(res_start_date, res_start_time) <= reserv.res_end or reserv.res_start <= datetime.combine(res_end_date, res_end_time) <= reserv.res_end:
-                                st.warning("Gewählter Zeitraum nicht mehr verfügbar")
-                            elif new_res_user != None:
-                                new_reservation = Reservation(res_index=len(sel_dev_reservations),
-                                                              res_start=datetime.combine(res_start_date, res_start_time),
-                                                              res_end=datetime.combine(res_end_date, res_end_time),
-                                                              res_usr=users_dict[new_res_user].id, device_id=sel_dev.id)
-
-                                st.button("Reservieren", key="add_reservation", on_click=new_reservation.add_reservation)
-                                #st.success("Reservierung hinzugefügt")
-                            else:
-                                st.warning("Bitte einen Nutzer auswählen!")
+                            st.button("Reservieren", key="add_new_reservation", on_click=new_reservation.add_reservation)
+                            #st.success("Reservierung hinzugefügt")
+                        else:
+                            st.warning("Bitte einen Nutzer auswählen!")
             
 
 with col2:
