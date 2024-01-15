@@ -34,20 +34,6 @@ user_id_list = [user.id for user in users_dict.values()]
 all_reservations = [Reservation.load_data_by_res_index(reservation_db) for reservation_db in reservations_in_db]
 all_mtn = [MTN_Plan.load_data_by_device_id(mtn_db) for mtn_db in mtn_in_db]
 
-#print(devices_dict) #########----------------Noch entfernen
-
-#users = [User(name="Andreas", id="mr.rioes@gmail.com"), User(name="Hannes", id="kompl_kek@yahoo.at"), User(name="Samuel", id="fortn_battlepass@outlook.com")]
-#users_dict = {user.id: user for user in users}
-#devices = [Device(name="Nintendo Switch", res_usr=users_dict["Andreas"], id=12345), Device(name="Among Us", res_usr=users_dict["Hannes"]), Device(name="Pro Controller (Luigi Edition)")]
-#devices_dict = {device.id: device for device in devices}
-
-
-# Testdaten für Reservierungen
-# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 1, 17), res_end=datetime(2024, 1, 19), res_usr=users_dict["Andreas"]))
-# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 3, 21), res_end=datetime(2024, 3, 22), res_usr=users_dict["Hannes"]))
-# devices_dict["Nintendo Switch"].add_reservation(Reservation(res_start=datetime(2024, 5, 25), res_end=datetime(2024, 5, 26), res_usr=users_dict["Samuel"]))
-#
-# devices_dict["Among Us"].add_reservation(Reservation(res_start=datetime(2024, 1, 21), res_end=datetime(2024, 1, 22), res_usr=users_dict["Andreas"]))
 
 col1, col2 = st.columns([0.6, 0.4])
 
@@ -78,58 +64,87 @@ with (col1):
 
             # Gerät bearbeiten
             with st.expander("Gerät bearbeiten"):
-                new_name = st.text_input("Gerätename", key="edit_name_device", placeholder="Name eingeben", value=selected_device.name)
-                #new_id = st.text_input("Gerätenummer", key="edit_id_device", placeholder="Nummer eingeben", value=selected_device.id)
-                new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_edit_device_user", index=None, placeholder="Verantwortlichen auswählen")
 
-                for user in users_dict.values():
-                    if user.name == new_user:
-                        new_user = user.id
+                with st.form(key="edit_device_form", border=False):
+                    new_name = st.text_input("Gerätename", key="edit_name_device", placeholder="Name eingeben", value=selected_device.name)
+                    # new_id = st.text_input("Gerätenummer", key="edit_id_device", placeholder="Nummer eingeben", value=selected_device.id)
+                    new_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_edit_device_user", index=None, placeholder="Neuen Verantwortlichen auswählen")
 
-                if st.button("Speichern", key="edit_device", on_click=selected_device.edit_device, args=(new_name, selected_device.id, new_user)):
-                    st.success("Änderungen gespeichert")
+                    for user in users_dict.values():
+                        if user.name == new_user:
+                            new_user = user.id
+
+                    if st.form_submit_button("Speichern"):
+                        selected_device.edit_device(new_name, new_user)
+                        st.success("Änderungen gespeichert")
+                        st.rerun()
 
         
         # Neues Gerät hinzufügen
         with st.expander("Neues Gerät hinzufügen"):
-            new_dev_name = st.text_input("Gerätename", key="name_new_device", placeholder="Name eingeben")
-            new_dev_id = st.number_input("Gerätenummer *", key="id_new_device", placeholder="ID eingeben", min_value=0)
-            new_dev_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
-            new_dev_user_id = None
-            if new_dev_user != None:
-                new_device_user_id = users_dict[new_dev_user].id
-            new_device = Device(name=new_dev_name, id=new_dev_id, res_usr=new_dev_user_id)
 
-            st.button("Hinzufügen", key="add_device", on_click=new_device.add_new_device, args=[device_id_list])
+            with st.form(key="add_device_form", clear_on_submit=True, border=False):
+                new_dev_name = st.text_input("Gerätename", key="name_new_device", placeholder="Name eingeben")
+                new_dev_id = st.number_input("Gerätenummer *", key="id_new_device", placeholder="ID eingeben", min_value=0)
+                new_dev_user = st.selectbox("Verantwortlicher", options=[user.name for user in users_dict.values()], key="selectbox_new_device_user", index=None, placeholder="Verantwortlichen auswählen")
+                new_dev_user_id = None
+                if new_dev_user != None:
+                    new_dev_user_id = users_dict[new_dev_user].id
+                new_device = Device(name=new_dev_name, id=new_dev_id, res_usr=new_dev_user_id)
+
+                if st.form_submit_button("Gerät hinzufügen"):
+                    if new_device.id in device_id_list:
+                        st.warning("Gerätenummer bereits vergeben!")
+                    elif new_device.id == None:
+                        st.warning("Bitte eine Gerätenummer eingeben!")
+                    else:
+                        new_device.add_new_device()
+                        st.success("Gerät hinzugefügt")
+                        st.rerun()
 
     
     with tab2:
         st.header("Nutzerverwaltung", divider="red")
         st.write("Übersicht aller registrierten Benutzer")
 
+        # Nutzer bearbeiten
         for key in users_dict:
             with st.expander(F"{users_dict[key].name} ({users_dict[key].id})"):
-                new_name = st.text_input("Nutzername", key=F"edit_name_user_{users_dict[key].id}", placeholder="Name eingeben", value=users_dict[key].name)
-                new_id = st.text_input("Nutzer-ID", key=F"edit_id_user_{users_dict[key].id}", placeholder="ID eingeben", value=users_dict[key].id)
-                
-                save, delete = st.columns(2)
-                with save:
-                    st.button("Speichern", key=F"save_user_{users_dict[key].id}", on_click=users_dict[key].edit_user, args=(new_name, new_id, user_id_list))
+                with st.form(key=F"edit_user_form_{users_dict[key].id}", border=False):
 
-                with delete:
-                    if st.button("Löschen", key=F"delete_user_{users_dict[key].id}"): ################################################################################################
-                        #st.success("Nutzer gelöscht")
-                        #users_dict.pop(key)
-                        #users = [user for user in users_dict.values()]
-                        pass
+                    new_name = st.text_input("Nutzername", key=F"edit_name_user_{users_dict[key].id}", placeholder="Name eingeben", value=users_dict[key].name)
+                    new_id = st.text_input("Nutzer-ID", key=F"edit_id_user_{users_dict[key].id}", placeholder="ID eingeben", value=users_dict[key].id)
+
+                    save, delete = st.columns(2)
+                    with save:
+                        if st.form_submit_button("Speichern"):
+                            if new_id not in [name for name in user_id_list if name != users_dict[key].id] and new_id is not None:
+                                users_dict[key].edit_user(new_name, new_id)
+                                st.success("Änderungen gespeichert")
+                                st.rerun()
+                            else:
+                                st.warning("Bitte eine eindeutige ID eingeben!")
+
+
+                    with delete:
+                        if st.form_submit_button("Löschen"): ################################################################################################
+                            st.success("Nutzer gelöscht")
+
 
         #Neuen Nutzer hinzufügen
         with st.expander("Neuen Nutzer hinzufügen"):
-            new_user_name = st.text_input("Nutzername", key="new_name", placeholder="Name eingeben")
-            new_user_id = st.text_input("Nutzer-ID", key="new_id", placeholder="ID eingeben")
-            new_user = User(name=new_user_name, id=new_user_id)
+            with st.form(key="add_user_form", clear_on_submit=True, border=False):
+                new_user_name = st.text_input("Nutzername", key="new_name", placeholder="Name eingeben")
+                new_user_id = st.text_input("Nutzer-ID", key="new_id", placeholder="ID eingeben")
+                new_user = User(name=new_user_name, id=new_user_id)
 
-            st.button("Hinzufügen", key="add_user", on_click=new_user.add_user, args=[user_id_list])
+                if st.form_submit_button("Hinzufügen"):
+                    if new_user.id in user_id_list:
+                        st.warning("Nutzer-ID bereits vergeben!")
+                    else:
+                        new_user.add_user()
+                        st.success("Nutzer hinzugefügt")
+                        st.rerun()
 
 
     with tab3:
@@ -151,13 +166,23 @@ with (col1):
                 #mtn hinzufügen
                 st.expander("Neuen Wartungsplan hinzufügen")
                 with st.expander("Neuen Wartungsplan hinzufügen"):
-                    new_mtn_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD/MM/YYYY")
-                    new_mtn_last = st.date_input("Zuletzt gewartet", key="new_mtn_last", format="DD/MM/YYYY")
-                    new_mtn_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD/MM/YYYY")
-                    new_mtn_int = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
-                    new_mtn_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", min_value=0.0)
-                    new_mtn_plan = MTN_Plan(new_mtn_int, new_mtn_start, new_mtn_cost, new_mtn_last, new_mtn_end, sel_dev.id, None)
-                    st.button("Hinzufügen", key="add_mtn_plan", on_click=new_mtn_plan.add_new_mtn)
+                    with st.form(key="add_mtn_form", clear_on_submit=False, border=False):
+                        new_mtn_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD.MM.YYYY")
+                        new_mtn_last = st.date_input("Zuletzt gewartet", key="new_mtn_last", format="DD.MM.YYYY")
+                        new_mtn_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD.MM.YYYY")
+                        new_mtn_int = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=1)
+                        new_mtn_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", min_value=0.0)
+                        new_mtn_plan = MTN_Plan(new_mtn_int, new_mtn_start, new_mtn_cost, new_mtn_last, new_mtn_end, sel_dev.id, None)
+                        if st.form_submit_button("Hinzufügen"):
+                            for key, value in new_mtn_plan.__dict__.items():
+                                if value is None:
+                                    st.warning(f"Bitte alle Felder ausfüllen.")
+                                elif new_mtn_start > new_mtn_last:
+                                    st.warning("Erste Wartung kann nicht nach letzter Wartung stattfinden.")
+                                else:
+                                    new_mtn_plan.add_new_mtn()
+                                    st.success("Wartungsplan wurde erfolgreich hinzugefügt.")
+                                    st.rerun()
 
             else:
                 mtn_df = pd.DataFrame(columns=["Erste Wartung", "Letzte Wartung", "Nächste Wartung", "Kosten einer Wartung", "Wartungsintervall", "Ende der Lebensdauer"])
@@ -172,8 +197,9 @@ with (col1):
                     current_maint_time = current_maint_time + timedelta(days=sel_dev_mtn.mtn_int)
                 
                 end_of_year = datetime(datetime.now().year, 12, 31)
+                end_of_calc = sel_dev_mtn.end_of_life if sel_dev_mtn.end_of_life < end_of_year else end_of_year
                 costs_quarter_values = [0,0,0,0]
-                while current_maint_time < end_of_year:
+                while current_maint_time < end_of_calc:
                     current_maint_time = current_maint_time + timedelta(days=sel_dev_mtn.mtn_int)
                     if current_maint_time.month in [1,2,3]:
                         costs_quarter_values[0] += sel_dev_mtn.mtn_cost
@@ -190,17 +216,32 @@ with (col1):
 
                 
                 with st.expander("Wartungsplan bearbeiten"):
-                    new_mtn_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD/MM/YYYY", value=sel_dev_mtn.first_mtn)
-                    new_mtn_last = st.date_input("Zuletzt gewartet", key="new_mtn_last", format="DD/MM/YYYY", value=sel_dev_mtn.last_mtn)
-                    new_mtn_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD/MM/YYYY", value=sel_dev_mtn.end_of_life)
+                    with st.form(key="edit_mtn_form", clear_on_submit=False, border=False):
+                        new_mtn_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD.MM.YYYY", value=sel_dev_mtn.first_mtn)
+                        new_mtn_last = st.date_input("Zuletzt gewartet", key="new_mtn_last", format="DD.MM.YYYY", value=sel_dev_mtn.last_mtn)
+                        new_mtn_end = st.date_input("Ende der Lebensdauer", key="new_mtn_end", format="DD.MM.YYYY", value=sel_dev_mtn.end_of_life)
 
-                    next_mtn_string = sel_dev_mtn.next_mtn.strftime("%d.%m.%Y")
-                    new_next = st.date_input(F"Nächsten Wartungstermin ändern (geplant: {next_mtn_string})", key="new_mtn_next", format="DD/MM/YYYY", value=sel_dev_mtn.next_mtn)
+                        next_mtn_string = sel_dev_mtn.next_mtn.strftime("%d.%m.%Y")
+                        new_next = st.date_input(F"Nächsten Wartungstermin ändern (geplant: {next_mtn_string})", key="new_mtn_next", format="DD.MM.YYYY", value=sel_dev_mtn.next_mtn)
 
-                    new_interval = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=sel_dev_mtn.mtn_int)
-                    new_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", value=sel_dev_mtn.mtn_cost, min_value=0.0)
+                        new_interval = st.number_input("Wartungsintervall (Tage)", key="new_mtn_interval", min_value=1, value=sel_dev_mtn.mtn_int)
+                        new_cost = st.number_input("Kosten einer Wartung", key="new_mtn_cost", value=sel_dev_mtn.mtn_cost, min_value=0.0)
 
-                    st.button("Speichern", key="save_mtn_plan", on_click=sel_dev_mtn.edit_mtn, args=(new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost, new_next))
+                        if st.form_submit_button("Speichern"):
+                            if any(arg is None for arg in [new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost, new_next]):
+                                st.warning("Bitte alle Felder ausfüllen.")
+                            elif new_mtn_start > new_mtn_last:
+                                st.warning("Erste Wartung kann nicht nach letzter Wartung stattfinden.")
+                            elif new_mtn_last > new_next:
+                                st.warning("Letzte Wartung kann nicht nach nächster Wartung stattfinden.")
+                            elif new_next > new_mtn_end:
+                                st.warning("Nächste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
+                            elif new_mtn_start > new_mtn_end:
+                                st.warning("Erste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
+                            else:
+                                sel_dev_mtn.edit_mtn(new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost, new_next)
+                                st.success("Änderungen gespeichert")
+                                st.rerun()
 
     with tab4:
         st.header("Reservierungssystem", divider="red")
@@ -230,50 +271,62 @@ with (col1):
 
 
                 with st.expander("Reservierung löschen"):
-                    if sel_dev_reservations != []:
-                        reserv_index = st.number_input("Index der Reservierung", key="reserv_index", min_value=0, max_value=len(sel_dev_reservations)-1, value=0)
-                        if st.button("Löschen", key="delete_reservation"):
-                            ###################################################################################################################
-                            #sel_dev.reservations.pop(reserv_index)
-                            st.success("Reservierung gelöscht")
+                    with st.form(key="delete_reservation_form", clear_on_submit=True, border=False):
+                        if sel_dev_reservations != []:
+                            reserv_index = st.number_input("Index der Reservierung", key="reserv_index", min_value=0, max_value=len(sel_dev_reservations)-1, value=0)
+                            if st.form_submit_button("Löschen"):
+                                ###################################################################################################################
+                                st.success("Reservierung gelöscht")
 
 
         # Neue Reservierung hinzufügen
             with st.expander("Neue Reservierung hinzufügen"):
-                start, end = st.columns(2)
-                with start:
-                    res_start_date = st.date_input("Startdatum", key="new_res_start_date", format="DD/MM/YYYY")
-                    res_start_time = st.time_input("Startzeit", key="new_res_start_time")
-                with end:
-                    res_end_date = st.date_input("Enddatum", key="new_res_end_date", format="DD/MM/YYYY")
-                    res_end_time = st.time_input("Endzeit", key="new_res_end_time")
-                new_res_user = st.selectbox("Nutzer auswählen", options=[user.name for user in users_dict.values()], key="selectbox_new_res_user", index=None, placeholder="Nutzer auswählen")
+                with st.form(key="add_new_reservation_form", clear_on_submit=False, border=False):
+                    start, end = st.columns(2)
+                    with start:
+                        res_start_date = st.date_input("Startdatum", key="new_res_start_date", format="DD.MM.YYYY")
+                        res_start_time = st.time_input("Startzeit", key="new_res_start_time")
+                    with end:
+                        res_end_date = st.date_input("Enddatum", key="new_res_end_date", format="DD.MM.YYYY")
+                        res_end_time = st.time_input("Endzeit", key="new_res_end_time")
+                    new_res_user = st.selectbox("Nutzer auswählen", options=[user.name for user in users_dict.values()], key="selectbox_new_res_user", index=None, placeholder="Nutzer auswählen")
 
-                if res_start_date > res_end_date:
-                    st.warning("Startdatum muss vor Enddatum liegen!")
-                elif res_start_time > res_end_time and res_start_date == res_end_date:
-                        st.warning("Startzeit muss vor Endzeit liegen!")
-                else:
-                    available = True
+                    is_available = True
                     for reserv in sel_dev_reservations:
                         if reserv.res_start <= datetime.combine(res_start_date, res_start_time) <= reserv.res_end or reserv.res_start <= datetime.combine(res_end_date, res_end_time) <= reserv.res_end:
-                            available = False
+                            is_available = False
+
+                    if st.form_submit_button("Reservierung hinzufügen"):
+                        if res_start_date > res_end_date:
+                            st.warning("Startdatum muss vor Enddatum liegen!")
+                        elif res_start_time > res_end_time and res_start_date == res_end_date:
+                            st.warning("Startzeit muss vor Endzeit liegen!")
+                        elif not is_available:
                             st.warning("Gewählter Zeitraum nicht mehr verfügbar")
-                            ############################################### fail walachmed sikerim
-                        elif new_res_user != None:
+                        elif new_res_user == None:
+                            st.warning("Bitte einen Nutzer auswählen!")
+                        else:
                             new_reservation = Reservation(res_index=len(sel_dev_reservations),
                                                           res_start=datetime.combine(res_start_date, res_start_time),
                                                           res_end=datetime.combine(res_end_date, res_end_time),
                                                           res_usr=users_dict[new_res_user].id, device_id=sel_dev.id)
+                            new_reservation.add_reservation()
+                            st.success("Reservierung hinzugefügt")
+                            st.rerun()
 
-                            st.button("Reservieren", key="add_new_reservation", on_click=new_reservation.add_reservation)
-                            #st.success("Reservierung hinzugefügt")
-                        else:
-                            st.warning("Bitte einen Nutzer auswählen!")
-            
 
 with col2:
     st.header("Allgemeine Übersicht", divider="red")
+
+    st.write("Aktive Reservierungen:")
+    active_reservations = pd.DataFrame(columns=["Gerät", "Nutzer", "Start", "Ende"])
+    for reservation in all_reservations:
+        if reservation.res_start <= datetime.now() <= reservation.res_end:
+            reservation_user = User.load_data_by_user_id(reservation.res_usr)
+            reservation_device = Device.load_data_by_device_id(reservation.device_id)
+            active_reservations.loc[len(active_reservations.index)] = [reservation_device.name, reservation_user.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
+    st.dataframe(active_reservations, use_container_width=True, hide_index=True)
+
     st.write("Anstehende Reservierungen in nächsten 2 Wochen:")
 
     next_reservations = pd.DataFrame(columns=["Gerät", "Nutzer", "Start", "Ende"])
@@ -296,6 +349,7 @@ with col2:
 
     st.dataframe(next_mtn, use_container_width=True, hide_index=True)
 
+    st.write("Registrierte Geräte:")
 
 # This ocmmand can rerun the script (DB-Reload?)
 #st.rerun()
