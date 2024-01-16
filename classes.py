@@ -232,9 +232,8 @@ class Device():
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
 
-    def edit_device(self, name:str=None, id:int=None, res_usr:User=None):
+    def edit_device(self, name:str=None, res_usr:User=None):
         self.name = name
-        self.id = id
         self.res_usr = res_usr
         self.last_update = dt.now()
         self.store_data()
@@ -277,10 +276,10 @@ class Device():
         # Load data from the database and create an instance of the Device class
         DeviceQuery = Query()
         result = cls.db_connector.search(DeviceQuery.id == id)
-
+        doc_index = result[0].doc_id
         if result:
             data = result[0]
-            return cls(data['res_usr'], data['id'], data['name'], data['last_update'], data['creation_date'],data.doc_id)
+            return cls(data['res_usr'], data['id'], data['name'], data['last_update'], data['creation_date'], doc_index)
         else:
             return None
         
