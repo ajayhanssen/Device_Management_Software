@@ -155,7 +155,7 @@ with (col1):
                     if new_user.id in user_id_list:
                         st.warning("Nutzer-ID bereits vergeben!")
                     else:
-                        new_user.add_user()
+                        new_user.add_user(forbidden_ids=user_id_list)
                         st.success("Nutzer hinzugefügt")
                         st.rerun()
 
