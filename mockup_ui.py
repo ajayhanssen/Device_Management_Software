@@ -32,6 +32,12 @@ for user_db in users_in_db:
 user_id_list = [user.id for user in users_dict.values()]
 
 all_reservations = [Reservation.load_data_by_res_index(reservation_db) for reservation_db in reservations_in_db]
+all_reservations.sort(key=lambda x: x.res_start)
+
+for index, reservation in enumerate(all_reservations):
+    reservation.res_index = index
+    reservation.store_data()
+
 all_mtn = [MTN_Plan.load_data_by_device_id(mtn_db) for mtn_db in mtn_in_db]
 
 
@@ -54,8 +60,11 @@ with (col1):
         with container:
             
             dev_attributes = pd.DataFrame(columns=["Gerätenummer", "Verantwortlicher", "Erstelldatum", "Zuletzt bearbeitet"])
+
             selected_device_user = User.load_data_by_user_id(selected_device.res_usr)
-            dev_attributes.loc[len(dev_attributes.index)] = [selected_device.id, selected_device_user.name if selected_device.res_usr is not None
+            if selected_device_user is None:
+                selected_device.res_usr = None
+            dev_attributes.loc[len(dev_attributes.index)] = [selected_device.id, selected_device_user.name if selected_device_user is not None
                                                              else "Kein Verantwortlicher", selected_device.creation_date.strftime("%d.%m.%Y"), selected_device.last_update.strftime("%d.%m.%Y")]
             # Dass die Kommas alle drei Nullen im Dataframe verschwinden:
             styled_dev_attr = dev_attributes.style.format({"Expense": lambda x : '{:.4f}'.format(x)})
@@ -73,7 +82,12 @@ with (col1):
                     for user in users_dict.values():
                         if user.name == new_user:
                             new_user = user.id
-                    speichern,löschen = st.columns(2)
+                    selected_device_res = []
+                    for reservation in all_reservations:
+                        if reservation.device_id == selected_device.id:
+                            selected_device_res.append(reservation)
+
+                    speichern, loeschen = st.columns(2)
 
                     
                     if speichern.form_submit_button("Speichern"):
@@ -81,12 +95,13 @@ with (col1):
                         st.success("Änderungen gespeichert")
                         st.rerun()
 
-                    if löschen.form_submit_button("Löschen"):
-                        loadeddev = Device.load_data_by_device_id(selected_device.id)
-                        loadeddev.delete_device(loadeddev.doc_index)
-
-                        st.success("Gerät gelöscht")
-                        st.rerun() 
+                    if loeschen.form_submit_button("Löschen"):
+                        if selected_device_res != []:
+                            st.warning("Gerät kann nicht gelöscht werden, da noch Reservierungen gebucht sind.")
+                        else:
+                            selected_device.delete_device(selected_device.doc_index)
+                            st.success("Gerät gelöscht")
+                            st.rerun()
 
         
         # Neues Gerät hinzufügen
@@ -124,6 +139,11 @@ with (col1):
                     new_name = st.text_input("Nutzername", key=F"edit_name_user_{users_dict[key].id}", placeholder="Name eingeben", value=users_dict[key].name)
                     new_id = st.text_input("Nutzer-ID", key=F"edit_id_user_{users_dict[key].id}", placeholder="ID eingeben", value=users_dict[key].id)
 
+                    selected_device_res = []
+                    for reservation in all_reservations:
+                        if reservation.res_usr == users_dict[key].id:
+                            selected_device_res.append(reservation)
+
                     save, delete = st.columns(2)
                     with save:
                         if st.form_submit_button("Speichern"):
@@ -138,9 +158,12 @@ with (col1):
 
                     with delete:
                         if st.form_submit_button("Löschen"): ################################################################################################
-                            loadeduser= User.load_data_by_user_id(users_dict[key].id)
-                            loadeduser.delete_usr(loadeduser.doc_index)
-                            st.rerun()
+                            if selected_device_res != []:
+                                st.warning("Nutzer kann nicht gelöscht werden, da noch Reservierungen gebucht sind.")
+                            else:
+                                loadeduser= User.load_data_by_user_id(users_dict[key].id)
+                                loadeduser.delete_usr(loadeduser.doc_index)
+                                st.rerun()
 
                             
 
@@ -267,29 +290,26 @@ with (col1):
             for reservation in all_reservations:
                 if reservation.device_id == sel_dev.id:
                     sel_dev_reservations.append(reservation)
-            sel_dev_reservations.sort(key=lambda x: x.res_start)
-            for index, reservation in enumerate(sel_dev_reservations):
-                reservation.res_index = index
-                reservation.store_data()
 
-            current_reservations = pd.DataFrame(columns=["Index", "Nutzer", "Start", "Ende"])
-
+            current_reservations = pd.DataFrame(columns=["Nutzer", "Start", "Ende"])
+            current_reservations = current_reservations.rename_axis("Index")
             if sel_dev_reservations != []:
                 for reservation in sel_dev_reservations:
                     res_user = User.load_data_by_user_id(reservation.res_usr)
-                    current_reservations.loc[len(current_reservations.index)] = [reservation.res_index, res_user.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
+                    current_reservations.loc[len(current_reservations.index)] = [res_user.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
 
             with st.container(border=True):
-                st.dataframe(current_reservations, use_container_width=True, hide_index=True)
+                st.dataframe(current_reservations, use_container_width=True)
 
-
-                with st.expander("Reservierung löschen"):
-                    with st.form(key="delete_reservation_form", clear_on_submit=True, border=False):
-                        if sel_dev_reservations != []:
-                            reserv_index = st.number_input("Index der Reservierung", key="reserv_index", min_value=0, max_value=len(sel_dev_reservations)-1, value=0)
-                            if st.form_submit_button("Löschen"):
-                                ###################################################################################################################
-                                st.success("Reservierung gelöscht")
+                if sel_dev_reservations != []:
+                    with st.expander("Reservierung löschen"):
+                        with st.form(key="delete_reservation_form", clear_on_submit=True, border=False):
+                            if sel_dev_reservations != []:
+                                reserv_index = st.number_input("Index der Reservierung", key="reserv_index", min_value=0, max_value=len(sel_dev_reservations)-1, value=0)
+                                if st.form_submit_button("Löschen"):
+                                    sel_dev_reservations[reserv_index].delete_reservation(sel_dev_reservations[reserv_index].doc_index)
+                                    st.success("Reservierung gelöscht")
+                                    st.rerun()
 
 
         # Neue Reservierung hinzufügen
@@ -319,11 +339,14 @@ with (col1):
                         elif new_res_user == None:
                             st.warning("Bitte einen Nutzer auswählen!")
                         else:
-                            new_reservation = Reservation(res_index=len(sel_dev_reservations),
+                            new_reservation = Reservation(res_index=len(all_reservations),
                                                           res_start=datetime.combine(res_start_date, res_start_time),
                                                           res_end=datetime.combine(res_end_date, res_end_time),
                                                           res_usr=users_dict[new_res_user].id, device_id=sel_dev.id)
-                            new_reservation.add_reservation()
+                            all_reservations.append(new_reservation)
+                            for reservation in all_reservations:
+                                reservation.store_data()
+                            #new_reservation.add_reservation()
                             st.success("Reservierung hinzugefügt")
                             st.rerun()
 
@@ -370,8 +393,6 @@ with col2:
 
 
     st.dataframe(next_mtn, use_container_width=True, hide_index=True)
-
-    st.write("Registrierte Geräte:")
 
 # This ocmmand can rerun the script (DB-Reload?)
 #st.rerun()

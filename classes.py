@@ -51,7 +51,6 @@ class User():
             print("Users inserted.")
 
     def delete_usr(self,key):
-
         if self.id is not None:
             self.db_connector.remove(doc_ids=[key])
 
@@ -92,7 +91,8 @@ class Reservation():
                  res_usr:User,
                  res_start:dt,
                  res_end:dt,
-                 device_id:int):
+                 device_id:int,
+                 doc_index:int=None):
         
         #initializing the class
         self.res_index = res_index
@@ -100,6 +100,7 @@ class Reservation():
         self.res_usr = res_usr
         self.res_start = res_start
         self.res_end = res_end
+        self.doc_index = doc_index
 
     #def add_reservation(self, Reservation:Reservation):
         #self.reservations.append(Reservation)
@@ -109,18 +110,23 @@ class Reservation():
         self.store_data()
         st.success("Reservierung wurde erfolgreich hinzugefügt.")
 
+    def delete_reservation(self, key):
+        self.db_connector.remove(doc_ids=[key])
+
     def store_data(self):
         print("Storing data...")
         # Check if the device already exists in the database
         ReservationQuery = Query()
         result = self.db_connector.search(ReservationQuery.res_index == self.res_index)
+        data_to_store = {'res_index': self.res_index, 'res_usr': self.res_usr, 'res_start': self.res_start, 'res_end': self.res_end, 'device_id': self.device_id}
         if result:
+
             # Update the existing record with the current instance's data
-            result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
+            result = self.db_connector.update(data_to_store, doc_ids=[result[0].doc_id])
             print("Reservations updated.")
         else:
             # If the device doesn't exist, insert a new record
-            self.db_connector.insert(self.__dict__)
+            self.db_connector.insert(data_to_store)
             print("Reservations inserted.")
 
     @classmethod
@@ -128,10 +134,10 @@ class Reservation():
         # Load data from the database and create an instance of the Device class
         ReservationQuery = Query()
         result = cls.db_connector.search(ReservationQuery.res_index == res_index)
-
+        doc_index = result[0].doc_id
         if result:
             data = result[0]
-            return cls(data['res_index'], data['res_usr'], data['res_start'], data['res_end'], data['device_id'])
+            return cls(data['res_index'], data['res_usr'], data['res_start'], data['res_end'], data['device_id'], doc_index)
         else:
             return None
 
