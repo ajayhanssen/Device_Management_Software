@@ -73,11 +73,20 @@ with (col1):
                     for user in users_dict.values():
                         if user.name == new_user:
                             new_user = user.id
+                    speichern,löschen = st.columns(2)
 
-                    if st.form_submit_button("Speichern"):
+                    
+                    if speichern.form_submit_button("Speichern"):
                         selected_device.edit_device(new_name, new_user)
                         st.success("Änderungen gespeichert")
                         st.rerun()
+
+                    if löschen.form_submit_button("Löschen"):
+                        loadeddev = Device.load_data_by_device_id(selected_device.id)
+                        loadeddev.delete_device(loadeddev.doc_index)
+
+                        st.success("Gerät gelöscht")
+                        st.rerun() 
 
         
         # Neues Gerät hinzufügen
@@ -98,7 +107,7 @@ with (col1):
                     elif new_device.id == None:
                         st.warning("Bitte eine Gerätenummer eingeben!")
                     else:
-                        new_device.add_new_device()
+                        new_device.add_new_device(forbidden_ids=device_id_list)
                         st.success("Gerät hinzugefügt")
                         st.rerun()
 
@@ -122,6 +131,7 @@ with (col1):
                                 users_dict[key].edit_user(new_name, new_id)
                                 st.success("Änderungen gespeichert")
                                 st.rerun()
+                        
                             else:
                                 st.warning("Bitte eine eindeutige ID eingeben!")
 
@@ -339,7 +349,12 @@ with col2:
             reservation_user = User.load_data_by_user_id(reservation.res_usr)
             reservation_device = Device.load_data_by_device_id(reservation.device_id)
             if datetime.now() <= reservation.res_start <= datetime.now() + timedelta(days=14):
-                next_reservations.loc[len(next_reservations.index)] = [reservation_device.name, reservation_user.name, reservation.res_start.strftime('%d.%m.%Y %H:%M'), reservation.res_end.strftime('%d.%m.%Y %H:%M')]
+                next_reservations.loc[len(next_reservations.index)] = [
+                    reservation_device.name if reservation_device else "Device not found",
+                    reservation_user.name if reservation_user else "User not found",
+                    reservation.res_start.strftime('%d.%m.%Y %H:%M'),
+                    reservation.res_end.strftime('%d.%m.%Y %H:%M')
+                    ]
 
     st.dataframe(next_reservations, use_container_width=True, hide_index=True)
 
@@ -348,7 +363,11 @@ with col2:
     for current_mtn in all_mtn:
         if datetime.now() <= current_mtn.next_mtn <= datetime.now() + timedelta(days=14):
             device = Device.load_data_by_device_id(current_mtn.device_id)
-            next_mtn.loc[len(next_mtn.index)] = [device.name, current_mtn.next_mtn.strftime('%d.%m.%Y')]
+            next_mtn.loc[len(next_mtn.index)] = [
+                device.name if device else "Device not found",
+                current_mtn.next_mtn.strftime('%d.%m.%Y') if current_mtn else "Maintenance details not found"
+                ]
+
 
     st.dataframe(next_mtn, use_container_width=True, hide_index=True)
 

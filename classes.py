@@ -212,7 +212,7 @@ class MTN_Plan():
 class Device():
     db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('devices')
 
-    def __init__(self, res_usr:str=None, id:int=None, name:str=None, last_update:dt=None, creation_date:dt=None):
+    def __init__(self, res_usr:str=None, id:int=None, name:str=None, last_update:dt=None, creation_date:dt=None, doc_index:str=None):
         
         #initializing the class
         
@@ -221,6 +221,7 @@ class Device():
         self.name = name
         self.last_update = last_update
         self.creation_date = creation_date
+        self.doc_index = doc_index
     
     def del_reservation(self, Reservation:Reservation):
         self.reservations.remove(Reservation)
@@ -241,16 +242,17 @@ class Device():
         # Check if the device already exists in the database
         DeviceQuery = Query()
         result = self.db_connector.search(DeviceQuery.id == self.id)
+        data_to_store = {'res_usr': self.res_usr, 'id': self.id, 'name': self.name, 'last_update': self.last_update, 'creation_date': self.creation_date}
         if result:
             # Update the existing record with the current instance's data
-            result = self.db_connector.update(self.__dict__, doc_ids=[result[0].doc_id])
+            result = self.db_connector.update(data_to_store, doc_ids=[result[0].doc_id])
             print("Data updated.")
         else:
             # If the device doesn't exist, insert a new record
-            self.db_connector.insert(self.__dict__)
+            self.db_connector.insert(data_to_store)
             print("Data inserted.")
 
-    def add_new_device(self, forbidden_ids:list):
+    def add_new_device(self, forbidden_ids:list=None):
         if self.id not in forbidden_ids:
             self.set_creation_date()
             self.store_data()
@@ -258,9 +260,11 @@ class Device():
         else:
             st.warning("Bitte eine eindeutige ID eingeben.")
 
-    def delete_dev(self):
-        self.db_connector.remove(doc_ids=[self.id])
-        st.success("Gerät wurde erfolgreich gelöscht.")
+    def delete_device(self, key):
+        if self.id is not None:
+            self.db_connector.remove(doc_ids=[key])
+            st.success("Gerät wurde erfolgreich gelöscht.")
+
 
     @classmethod
     def load_data_by_device_id(cls, id):
@@ -270,15 +274,22 @@ class Device():
 
         if result:
             data = result[0]
-            return cls(data['res_usr'], data['id'], data['name'], data['last_update'], data['creation_date'])
+            return cls(data['res_usr'], data['id'], data['name'], data['last_update'], data['creation_date'],data.doc_id)
         else:
             return None
+        
+    
 if __name__ == "__main__":
-    testuser = User("test", "testtest")
-    testuser.store_data()
-    loadeduser = User.load_data_by_user_id("testtest")
-    print(loadeduser.doc_index)
+    #testuser = User("test", "testtest")
+    testdevice = Device("test", "testtest", "test")
+    #testuser.store_data()
+    testdevice.store_data()
+    #loadeduser = User.load_data_by_user_id("testtest")
+    loadeddevice = Device.load_data_by_device_id("testtest")
+    #print(loadeduser.doc_index)
+    print(loadeddevice.doc_index)
     #loadeduser.delete_usr(loadeduser.doc_index)
-    print(F"{loadeduser.name} deleted.")
+    #print(F"{loadeduser.name} deleted.")
+    loadeddevice.delete_device(loadeddevice.doc_index)
 
-    loadeduser.store_data()
+    #loadeduser.store_data()
