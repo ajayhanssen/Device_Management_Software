@@ -88,6 +88,7 @@ with (col1):
                         if user.name == new_user:
                             new_user = user.id
                     selected_device_res = []
+
                     for reservation in all_reservations:
                         if reservation.device_id == selected_device.id:
                             selected_device_res.append(reservation)
