@@ -128,8 +128,11 @@ with (col1):
 
                     with delete:
                         if st.form_submit_button("Löschen"): ################################################################################################
-                            st.success("Nutzer gelöscht")
+                            loadeduser= User.load_data_by_user_id(users_dict[key].id)
+                            loadeduser.delete_usr(loadeduser.doc_index)
+                            st.rerun()
 
+                            
 
         #Neuen Nutzer hinzufügen
         with st.expander("Neuen Nutzer hinzufügen"):
