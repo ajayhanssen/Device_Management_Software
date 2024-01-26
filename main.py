@@ -299,6 +299,8 @@ with (col1):
                                 st.warning("Nächste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
                             elif new_mtn_start > new_mtn_end:
                                 st.warning("Erste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
+                            elif new_mtn_last > datetime.now():
+                                st.warning("Letzte Wartung kann nicht in der Zukunft stattfinden.")
                             else:
                                 sel_dev_mtn.edit_mtn(new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost,
                                                      new_next)
