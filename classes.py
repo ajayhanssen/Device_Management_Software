@@ -20,14 +20,12 @@ class User():
         self.id = id
         self.doc_index = doc_index
 
-    def edit_user(self, name:str=None, id:int=None, forbidden_ids:list=None):
-        if id not in [name for name in forbidden_ids if name != id] and id is not None:
-            self.name = name
-            self.id = id
-            self.store_data()
-            st.success("Änderungen gespeichert.")
-        else:
-            st.warning("Bitte eine eindeutige ID eingeben.")
+    def edit_user(self, name:str=None, id:int=None):
+        self.name = name
+        self.id = id
+        self.store_data()
+        st.success("Änderungen gespeichert.")
+
     def add_user(self, forbidden_ids:list):
         if self.id not in forbidden_ids:
             self.store_data()
@@ -188,7 +186,10 @@ class MTN_Plan():
             self.store_data()
             st.success("Änderungen gespeichert.")
 
-
+    def perform_mtn(self):
+        self.last_mtn = self.next_mtn
+        self.next_mtn = self.last_mtn + timedelta(days=self.mtn_int)
+        self.store_data()
     def store_data(self):
         print("Storing data...")
         # Check if the mtn already exists in the database

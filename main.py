@@ -264,6 +264,11 @@ with (col1):
                 st.write("Kosten pro Quartal in Euro:")
                 st.dataframe(costs_quarter, use_container_width=True, hide_index=True)
 
+                if st.button("Wartung durchführen"):
+                    sel_dev_mtn.perform_mtn()
+                    st.success("Wartung durchgeführt")
+                    st.rerun()
+
                 with st.expander("Wartungsplan bearbeiten"):
                     with st.form(key="edit_mtn_form", clear_on_submit=False, border=False):
                         new_mtn_start = st.date_input("Erste Wartung", key="new_mtn_start", format="DD.MM.YYYY",
