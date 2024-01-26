@@ -222,12 +222,21 @@ with (col1):
                             for key, value in new_mtn_plan.__dict__.items():
                                 if value is None:
                                     st.warning(f"Bitte alle Felder ausfüllen.")
+                                    break
                                 elif new_mtn_start > new_mtn_last:
                                     st.warning("Erste Wartung kann nicht nach letzter Wartung stattfinden.")
+                                    break
+                                elif new_mtn_last > datetime.now():
+                                    st.warning("Letzte Wartung kann nicht in der Zukunft stattfinden.")
+                                    break
+                                elif new_mtn_start > datetime.now():
+                                    st.warning("Anschaffungsdatum kann nicht in der Zukunft liegen.")
+                                    break
                                 else:
                                     new_mtn_plan.add_new_mtn()
                                     st.success("Wartungsplan wurde erfolgreich hinzugefügt.")
                                     st.rerun()
+                                    break
 
             else:
                 mtn_df = pd.DataFrame(
@@ -301,6 +310,8 @@ with (col1):
                                 st.warning("Erste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
                             elif new_mtn_last > datetime.now():
                                 st.warning("Letzte Wartung kann nicht in der Zukunft stattfinden.")
+                            elif new_mtn_start > datetime.now():
+                                st.warning("Anschaffungsdatum kann nicht in der Zukunft liegen.")
                             else:
                                 sel_dev_mtn.edit_mtn(new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost,
                                                      new_next)
