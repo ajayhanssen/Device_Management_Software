@@ -155,14 +155,17 @@ with (col1):
                     save, delete = st.columns(2)
                     with save:
                         if st.form_submit_button("Speichern"):
-                            if new_id not in [name for name in user_id_list if
-                                              name != users_dict[key].id] and new_id is not None:
-                                users_dict[key].edit_user(new_name, new_id)
-                                st.success("Änderungen gespeichert")
-                                st.rerun()
-
+                            if selected_device_res != [] and new_id != users_dict[key].id:
+                                st.warning("Nutzer-ID kann nicht bearbeitet werden, da noch Reservierungen gebucht sind.")
                             else:
-                                st.warning("Bitte eine eindeutige ID eingeben!")
+                                if new_id not in [name for name in user_id_list if
+                                                  name != users_dict[key].id] and new_id is not None:
+                                    users_dict[key].edit_user(new_name, new_id)
+                                    st.success("Änderungen gespeichert")
+                                    st.rerun()
+
+                                else:
+                                    st.warning("Bitte eine eindeutige ID eingeben!")
 
                     with delete:
                         if st.form_submit_button(
@@ -308,9 +311,9 @@ with (col1):
                                 st.warning("Nächste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
                             elif new_mtn_start > new_mtn_end:
                                 st.warning("Erste Wartung kann nicht nach Ende der Lebensdauer stattfinden.")
-                            elif new_mtn_last > datetime.now():
+                            elif datetime.combine(new_mtn_last, datetime.min.time()) > datetime.now():
                                 st.warning("Letzte Wartung kann nicht in der Zukunft stattfinden.")
-                            elif new_mtn_start > datetime.now():
+                            elif datetime.combine(new_mtn_start, datetime.min.time()) > datetime.now():
                                 st.warning("Anschaffungsdatum kann nicht in der Zukunft liegen.")
                             else:
                                 sel_dev_mtn.edit_mtn(new_mtn_start, new_mtn_last, new_mtn_end, new_interval, new_cost,
